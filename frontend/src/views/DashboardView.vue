@@ -138,7 +138,7 @@
       <div class="overflow-x-auto">
         <!-- Header -->
         <div class="hidden md:grid items-center gap-3 px-4 py-3 bg-gray-100/50 dark:bg-white/4 border-b border-gray-200/60 dark:border-white/8 text-[11px] font-semibold tracking-wide uppercase text-gray-500 dark:text-gray-400 min-w-[800px] recent-run-grid select-none">
-          <span class="text-center">ID</span>
+          <span class="text-center">{{ t('logs.table.id') }}</span>
           <span class="text-center">{{ t('dashboard.logs.account') }}</span>
           <span class="text-center">{{ t('logs.table.triggerType') }}</span>
           <span class="text-center">{{ t('dashboard.logs.time') }}</span>

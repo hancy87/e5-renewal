@@ -67,26 +67,26 @@
                 <!-- Divider -->
                 <div class="flex items-center gap-3">
                   <div class="flex-1 h-px bg-gray-200/50 dark:bg-white/6"></div>
-                  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 dark:text-gray-600">Microsoft Entra</span>
+                  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 dark:text-gray-600">Microsoft Entra 정보</span>
                   <div class="flex-1 h-px bg-gray-200/50 dark:bg-white/6"></div>
                 </div>
 
                 <!-- Credential Fields -->
                 <div class="space-y-1">
                   <div class="preview-field">
-                    <span class="preview-field-label">Client ID</span>
+                    <span class="preview-field-label">{{ t('accounts.form.clientId') }}</span>
                     <span class="preview-field-value font-mono truncate">{{ account.client_id }}</span>
                   </div>
                   <div class="preview-field">
-                    <span class="preview-field-label">Client Secret</span>
+                    <span class="preview-field-label">{{ t('accounts.form.clientSecret') }}</span>
                     <span class="preview-field-value font-mono">{{ maskSecret(account.client_secret) }}</span>
                   </div>
                   <div class="preview-field">
-                    <span class="preview-field-label">Tenant ID</span>
+                    <span class="preview-field-label">{{ t('accounts.form.tenantId') }}</span>
                     <span class="preview-field-value font-mono truncate">{{ account.tenant_id }}</span>
                   </div>
                   <div v-if="account.auth_type === 'auth_code'" class="preview-field">
-                    <span class="preview-field-label">Refresh Token</span>
+                    <span class="preview-field-label">{{ t('accounts.form.refreshToken') }}</span>
                     <span class="preview-field-value font-mono">{{ maskSecret(account.refresh_token) }}</span>
                   </div>
                 </div>
@@ -192,13 +192,13 @@
                 <!-- Divider -->
                 <div class="flex items-center gap-3">
                   <div class="flex-1 h-px bg-gray-200/50 dark:bg-white/6"></div>
-                  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 dark:text-gray-600">Microsoft Entra</span>
+                  <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 dark:text-gray-600">Microsoft Entra 정보</span>
                   <div class="flex-1 h-px bg-gray-200/50 dark:bg-white/6"></div>
                 </div>
 
                 <!-- Tenant ID -->
                 <div>
-                  <label class="form-label">Tenant ID</label>
+                  <label class="form-label">{{ t('accounts.form.tenantId') }}</label>
                   <input
                     v-model="form.tenant_id"
                     type="text"
@@ -214,7 +214,7 @@
 
                 <!-- Client ID -->
                 <div>
-                  <label class="form-label">Client ID</label>
+                  <label class="form-label">{{ t('accounts.form.clientId') }}</label>
                   <input
                     v-model="form.client_id"
                     type="text"
@@ -230,7 +230,7 @@
 
                 <!-- Client Secret -->
                 <div>
-                  <label class="form-label">Client Secret</label>
+                  <label class="form-label">{{ t('accounts.form.clientSecret') }}</label>
                   <div class="relative">
                     <input
                       v-model="form.client_secret"

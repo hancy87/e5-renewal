@@ -43,8 +43,7 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 1, schedule: enabledSchedule },
       ...mountOptions,
     })
-    // Uses i18n key 'accounts.schedule.enabled' -> Chinese default '已启用'
-    expect(wrapper.text()).toContain('已启用')
+    expect(wrapper.text()).toContain('사용 중')
   })
 
   it('displays disabled status when schedule is inactive', () => {
@@ -52,7 +51,7 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 1, schedule: disabledSchedule },
       ...mountOptions,
     })
-    expect(wrapper.text()).toContain('已关闭')
+    expect(wrapper.text()).toContain('사용 안 함')
   })
 
   it('displays paused status and pause reason', () => {
@@ -60,7 +59,7 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 1, schedule: pausedSchedule },
       ...mountOptions,
     })
-    expect(wrapper.text()).toContain('已暂停')
+    expect(wrapper.text()).toContain('일시 중지됨')
     expect(wrapper.text()).toContain('Health too low')
   })
 
@@ -69,8 +68,8 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 1, schedule: pausedSchedule },
       ...mountOptions,
     })
-    // Resume text: '恢复'
-    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('恢复'))
+    // Resume text: '재개'
+    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('재개'))
     expect(resumeBtn).toBeTruthy()
   })
 
@@ -79,7 +78,7 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 42, schedule: pausedSchedule },
       ...mountOptions,
     })
-    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('恢复'))
+    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('재개'))
     await resumeBtn!.trigger('click')
     expect(wrapper.emitted('resume')).toBeTruthy()
     expect(wrapper.emitted('resume')![0]).toEqual([42])
@@ -90,7 +89,7 @@ describe('ScheduleDialog', () => {
       props: { visible: true, accountId: 1, schedule: enabledSchedule },
       ...mountOptions,
     })
-    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('恢复'))
+    const resumeBtn = wrapper.findAll('button').find((b) => b.text().includes('재개'))
     expect(resumeBtn).toBeUndefined()
   })
 
@@ -115,8 +114,7 @@ describe('ScheduleDialog', () => {
       ...mountOptions,
     })
 
-    // Find save button (contains '保存' text)
-    const saveBtn = wrapper.findAll('button').find((b) => b.text() === '保存')
+    const saveBtn = wrapper.findAll('button').find((b) => b.text() === '저장')
     expect(saveBtn).toBeTruthy()
 
     await saveBtn!.trigger('click')
@@ -133,9 +131,7 @@ describe('ScheduleDialog', () => {
       ...mountOptions,
     })
 
-    // Close button is the X button in the header (first small button with svg)
-    // or the cancel button in footer ('取消')
-    const cancelBtn = wrapper.findAll('button').find((b) => b.text() === '取消')
+    const cancelBtn = wrapper.findAll('button').find((b) => b.text() === '취소')
     await cancelBtn!.trigger('click')
     expect(wrapper.emitted('update:visible')).toBeTruthy()
     expect(wrapper.emitted('update:visible')![0]).toEqual([false])
@@ -159,8 +155,8 @@ describe('ScheduleDialog', () => {
       props: { visible: false, accountId: 1, schedule: enabledSchedule },
       ...mountOptions,
     })
-    expect(wrapper.text()).not.toContain('运行中')
-    expect(wrapper.text()).not.toContain('定时任务')
+    expect(wrapper.text()).not.toContain('실행 중')
+    expect(wrapper.text()).not.toContain('예약 작업')
   })
 
   it('does not emit save when accountId is null', async () => {
@@ -169,7 +165,7 @@ describe('ScheduleDialog', () => {
       ...mountOptions,
     })
 
-    const saveBtn = wrapper.findAll('button').find((b) => b.text() === '保存')
+    const saveBtn = wrapper.findAll('button').find((b) => b.text() === '저장')
     await saveBtn!.trigger('click')
     expect(wrapper.emitted('save')).toBeFalsy()
   })

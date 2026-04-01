@@ -107,9 +107,8 @@ describe('ConfirmDialog', () => {
       },
       ...mountOptions,
     })
-    // Default props are Chinese: 确定 / 取消
-    expect(wrapper.text()).toContain('确定')
-    expect(wrapper.text()).toContain('取消')
+    expect(wrapper.text()).toContain('확인')
+    expect(wrapper.text()).toContain('취소')
   })
 
   it('applies danger styling to confirm button when danger is true', () => {

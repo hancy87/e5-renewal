@@ -57,11 +57,10 @@ describe('AppSidebar', () => {
     })
 
     const text = wrapper.text()
-    // i18n defaults to zh
-    expect(text).toContain('仪表盘')
-    expect(text).toContain('账号管理')
-    expect(text).toContain('执行日志')
-    expect(text).toContain('设置')
+    expect(text).toContain('대시보드')
+    expect(text).toContain('계정 관리')
+    expect(text).toContain('실행 로그')
+    expect(text).toContain('설정')
   })
 
   it('renders logout button', async () => {
@@ -75,7 +74,7 @@ describe('AppSidebar', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('退出登录')
+    expect(wrapper.text()).toContain('로그아웃')
   })
 
   it('emits update:collapsed when collapse toggle is clicked', async () => {
@@ -131,12 +130,12 @@ describe('AppSidebar', () => {
 
     const links = wrapper.findAll('a')
     // Dashboard link should have the active class
-    const dashboardLink = links.find((l) => l.text().includes('仪表盘'))
+    const dashboardLink = links.find((l) => l.text().includes('대시보드'))
     expect(dashboardLink).toBeTruthy()
     expect(dashboardLink!.classes().some((c) => c.includes('bg-apple-blue/12'))).toBe(true)
 
     // Other links should not have the active class
-    const accountsLink = links.find((l) => l.text().includes('账号管理'))
+    const accountsLink = links.find((l) => l.text().includes('계정 관리'))
     expect(accountsLink!.classes().some((c) => c.includes('bg-apple-blue/12'))).toBe(false)
   })
 
@@ -152,7 +151,7 @@ describe('AppSidebar', () => {
     })
 
     const links = wrapper.findAll('a')
-    const accountsLink = links.find((l) => l.text().includes('账号管理'))
+    const accountsLink = links.find((l) => l.text().includes('계정 관리'))
     expect(accountsLink!.classes().some((c) => c.includes('bg-apple-blue/12'))).toBe(true)
   })
 
@@ -242,8 +241,7 @@ describe('AppSidebar', () => {
       },
     })
 
-    // Find the logout button (contains text "退出登录")
-    const logoutBtn = wrapper.findAll('button').find(b => b.text().includes('退出登录'))
+    const logoutBtn = wrapper.findAll('button').find(b => b.text().includes('로그아웃'))
     expect(logoutBtn).toBeDefined()
     await logoutBtn!.trigger('click')
     // Wait for navigation to complete
@@ -254,5 +252,19 @@ describe('AppSidebar', () => {
     expect(auth.token.value).toBe('')
     // Should navigate to /login
     expect(router.currentRoute.value.path).toBe('/login')
+  })
+
+  it('언어 전환 버튼을 렌더링하지 않는다', async () => {
+    const router = makeRouter()
+    await router.isReady()
+
+    const wrapper = mount(AppSidebar, {
+      props: { collapsed: false },
+      global: {
+        plugins: [router],
+      },
+    })
+
+    expect(wrapper.text()).not.toMatch(/EN|中|中文|English/)
   })
 })

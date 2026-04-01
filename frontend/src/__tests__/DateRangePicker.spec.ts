@@ -26,11 +26,11 @@ const mountOptions = {
 describe('DateRangePicker', () => {
   it('renders trigger with placeholders when no value', () => {
     const wrapper = mount(DateRangePicker, {
-      props: { modelValue: '', startPlaceholder: 'Start', endPlaceholder: 'End' },
+      props: { modelValue: '', startPlaceholder: '시작일', endPlaceholder: '종료일' },
       ...mountOptions,
     })
-    expect(wrapper.text()).toContain('Start')
-    expect(wrapper.text()).toContain('End')
+    expect(wrapper.text()).toContain('시작일')
+    expect(wrapper.text()).toContain('종료일')
     expect(wrapper.text()).toContain('~')
   })
 
@@ -100,5 +100,16 @@ describe('DateRangePicker', () => {
       ...mountOptions,
     })
     expect(wrapper.find('.clear-btn').exists()).toBe(false)
+  })
+
+  it('v-calendar에 한국어 로케일을 전달한다', async () => {
+    const wrapper = mount(DateRangePicker, {
+      props: { modelValue: '' },
+      ...mountOptions,
+    })
+
+    await wrapper.find('.date-range-trigger').trigger('click')
+    const picker = wrapper.findComponent({ name: 'DatePicker' })
+    expect(picker.props('locale')).toBe('ko-KR')
   })
 })

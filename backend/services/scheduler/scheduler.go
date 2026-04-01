@@ -212,7 +212,7 @@ func (s *Scheduler) runTask(ctx context.Context, accountID uint) {
 	s.loadNotificationConfig(ctx, &cfg)
 	lang := cfg.Language
 	if lang == "" {
-		lang = "zh"
+		lang = "ko"
 	}
 
 	slog.Info("running task", "subsystem", "scheduler", "account_id", accountID, "account_name", account.Name)
@@ -353,7 +353,7 @@ func (s *Scheduler) checkAuthExpiry(ctx context.Context) {
 
 	lang := cfg.Language
 	if lang == "" {
-		lang = "zh"
+		lang = "ko"
 	}
 
 	for _, acc := range accounts {

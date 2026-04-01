@@ -13,6 +13,7 @@ import (
 	"e5-renewal/backend/database"
 	"e5-renewal/backend/middleware"
 	"e5-renewal/backend/models"
+	"e5-renewal/backend/respond"
 	"e5-renewal/backend/services/graph"
 	"e5-renewal/backend/services/oauth"
 	"e5-renewal/backend/services/scheduler"
@@ -86,13 +87,13 @@ func getAccountHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 
 		account, err := database.Accounts.GetByID(ctx, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			c.JSON(http.StatusNotFound, respond.Error("계정을 찾을 수 없습니다", "Account not found"))
 			return
 		}
 
@@ -116,7 +117,7 @@ func listAccountsHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		accounts, err := database.Accounts.List(ctx)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query accounts"})
+			c.JSON(http.StatusInternalServerError, respond.Error("계정 목록을 조회하지 못했습니다", "Failed to query accounts"))
 			return
 		}
 
@@ -144,11 +145,11 @@ func createAccountHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		var req accountRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			c.JSON(http.StatusBadRequest, respond.Error("잘못된 요청입니다", "Invalid request"))
 			return
 		}
 		if req.AuthType != models.AuthTypeAuthCode && req.AuthType != models.AuthTypeClientCredentials {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid auth_type"})
+			c.JSON(http.StatusBadRequest, respond.Error("auth_type 값이 올바르지 않습니다", "Invalid auth_type"))
 			return
 		}
 
@@ -172,7 +173,7 @@ func createAccountHandler() gin.HandlerFunc {
 		}
 
 		if err := database.Accounts.Create(ctx, &account); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create account"})
+			c.JSON(http.StatusInternalServerError, respond.Error("계정을 생성하지 못했습니다", "Failed to create account"))
 			return
 		}
 
@@ -182,7 +183,10 @@ func createAccountHandler() gin.HandlerFunc {
 			PauseThreshold: 30,
 		})
 
-		c.JSON(http.StatusCreated, gin.H{"id": account.ID})
+		c.JSON(http.StatusCreated, respond.Merge(
+			gin.H{"id": account.ID},
+			respond.Status("생성되었습니다", "Created"),
+		))
 	}
 }
 
@@ -191,27 +195,28 @@ func updateAccountHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 
 		account, err := database.Accounts.GetByID(ctx, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			c.JSON(http.StatusNotFound, respond.Error("계정을 찾을 수 없습니다", "Account not found"))
 			return
 		}
 
 		var req accountRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			c.JSON(http.StatusBadRequest, respond.Error("잘못된 요청입니다", "Invalid request"))
 			return
 		}
 		if req.AuthType != models.AuthTypeAuthCode && req.AuthType != models.AuthTypeClientCredentials {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid auth_type"})
+			c.JSON(http.StatusBadRequest, respond.Error("auth_type 값이 올바르지 않습니다", "Invalid auth_type"))
 			return
 		}
 
-		// Write guard: if submitted secret contains mask pattern, preserve existing value
+		// 제출된 시크릿이 마스킹 패턴이면 기존 값을 유지합니다.
+		// If the submitted secret contains the mask pattern, preserve the existing value.
 		var existingAuth models.AuthInfoData
 		_ = json.Unmarshal([]byte(account.AuthInfo), &existingAuth)
 
@@ -242,10 +247,10 @@ func updateAccountHandler() gin.HandlerFunc {
 		}
 
 		if err := database.Accounts.Save(ctx, account); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update account"})
+			c.JSON(http.StatusInternalServerError, respond.Error("계정을 수정하지 못했습니다", "Failed to update account"))
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "updated"})
+		c.JSON(http.StatusOK, respond.Status("수정되었습니다", "Updated"))
 	}
 }
 
@@ -254,21 +259,21 @@ func deleteAccountHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 
 		if _, err := database.Accounts.GetByID(ctx, uint(id)); err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			c.JSON(http.StatusNotFound, respond.Error("계정을 찾을 수 없습니다", "Account not found"))
 			return
 		}
 
 		if err := database.Accounts.DeleteCascade(ctx, uint(id)); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+			c.JSON(http.StatusInternalServerError, respond.Error("계정을 삭제하지 못했습니다", "Failed to delete account"))
 			return
 		}
 		sched.UnregisterAccount(uint(id))
-		c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+		c.JSON(http.StatusOK, respond.Status("삭제되었습니다", "Deleted"))
 	}
 }
 
@@ -285,7 +290,7 @@ func verifyAccountHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req verifyRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			c.JSON(http.StatusBadRequest, respond.Error("잘못된 요청입니다", "Invalid request"))
 			return
 		}
 
@@ -293,27 +298,27 @@ func verifyAccountHandler() gin.HandlerFunc {
 		switch req.AuthType {
 		case models.AuthTypeAuthCode:
 			if req.RefreshToken == "" {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token is required for auth_code"})
+				c.JSON(http.StatusBadRequest, respond.Error("auth_code 방식에는 refresh_token이 필요합니다", "refresh_token is required for auth_code"))
 				return
 			}
 			scope := strings.Join(graph.DelegatedScopeURLs(), " ") + " offline_access"
 			_, err := oauthSvc.RefreshToken(ctx, req.TenantID, req.ClientID, req.ClientSecret, req.RefreshToken, scope)
 			if err != nil {
-				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				c.JSON(http.StatusUnprocessableEntity, respond.Error("토큰 검증에 실패했습니다: "+err.Error(), "Token verification failed: "+err.Error()))
 				return
 			}
 		case models.AuthTypeClientCredentials:
 			_, err := oauthSvc.AcquireClientToken(ctx, req.TenantID, req.ClientID, req.ClientSecret)
 			if err != nil {
-				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+				c.JSON(http.StatusUnprocessableEntity, respond.Error("클라이언트 토큰 검증에 실패했습니다: "+err.Error(), "Client token verification failed: "+err.Error()))
 				return
 			}
 		default:
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid auth_type"})
+			c.JSON(http.StatusBadRequest, respond.Error("auth_type 값이 올바르지 않습니다", "Invalid auth_type"))
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"status": "valid"})
+		c.JSON(http.StatusOK, respond.Status("유효합니다", "Valid"))
 	}
 }
 
@@ -321,19 +326,20 @@ func triggerAccountHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 		result, err := sched.TriggerNow(c.Request.Context(), uint(id))
 		if err != nil && result == nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+				c.JSON(http.StatusNotFound, respond.Error("계정을 찾을 수 없습니다", "Account not found"))
 				return
 			}
-			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+			c.JSON(http.StatusUnprocessableEntity, respond.Error("수동 실행에 실패했습니다: "+err.Error(), "Manual trigger failed: "+err.Error()))
 			return
 		}
-		// Even on error (e.g. token failure), return the recorded result
+		// 토큰 실패 같은 오류가 있더라도 기록된 실행 결과는 그대로 반환합니다.
+		// Even on error (for example, token failure), return the recorded result.
 		c.JSON(http.StatusOK, result)
 	}
 }
@@ -343,13 +349,13 @@ func getScheduleHandler() gin.HandlerFunc {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 
 		s, err := database.Schedules.GetByAccountID(ctx, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "schedule not found"})
+			c.JSON(http.StatusNotFound, respond.Error("스케줄을 찾을 수 없습니다", "Schedule not found"))
 			return
 		}
 
@@ -369,19 +375,19 @@ func updateScheduleHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
 			return
 		}
 
 		s, err := database.Schedules.GetByAccountID(ctx, uint(id))
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "schedule not found"})
+			c.JSON(http.StatusNotFound, respond.Error("스케줄을 찾을 수 없습니다", "Schedule not found"))
 			return
 		}
 
 		var req scheduleRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			c.JSON(http.StatusBadRequest, respond.Error("잘못된 요청입니다", "Invalid request"))
 			return
 		}
 
@@ -404,12 +410,12 @@ func updateScheduleHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 		}
 
 		if err := database.Schedules.Save(ctx, s); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update schedule"})
+			c.JSON(http.StatusInternalServerError, respond.Error("스케줄을 수정하지 못했습니다", "Failed to update schedule"))
 			return
 		}
 
 		sched.RegisterAccount(ctx, uint(id))
-		c.JSON(http.StatusOK, gin.H{"status": "updated"})
+		c.JSON(http.StatusOK, respond.Status("수정되었습니다", "Updated"))
 	}
 }
 
@@ -477,6 +483,7 @@ func buildAccountResponseUnmasked(ctx context.Context, acc models.Account) accou
 	return resp
 }
 
+// maskSecret은 API 응답에 안전하게 노출할 수 있도록 시크릿 문자열을 마스킹합니다.
 // maskSecret returns a masked version of a secret string for safe API responses.
 func maskSecret(s string) string {
 	if len(s) <= 8 {

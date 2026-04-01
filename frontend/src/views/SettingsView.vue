@@ -34,12 +34,12 @@
         </p>
       </div>
 
-      <!-- Notification Language -->
+      <!-- 알림 언어 -->
       <div>
         <label class="form-label">{{ t('settings.notification.language') }}</label>
         <div class="flex gap-2">
           <button
-            v-for="lang in ['zh', 'en']"
+            v-for="lang in ['ko', 'en']"
             :key="lang"
             type="button"
             :class="[
@@ -220,7 +220,7 @@ interface NotificationConfig {
 
 const form = reactive<NotificationConfig>({
   url: '',
-  language: 'zh',
+  language: 'ko',
   on_auth_expiry: false,
   expiry_days_before: 7,
   on_task_all_failed: false,

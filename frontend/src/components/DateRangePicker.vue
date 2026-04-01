@@ -58,7 +58,6 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { DatePicker } from 'v-calendar'
 import 'v-calendar/style.css'
-import { useI18n } from '../i18n'
 
 const props = withDefaults(defineProps<{
   modelValue: [string, string] | ''
@@ -76,8 +75,7 @@ const emit = defineEmits<{
   (e: 'change', value: [string, string] | null): void
 }>()
 
-const { locale } = useI18n()
-const vcLocale = computed(() => locale.value === 'zh' ? 'zh-CN' : 'en-US')
+const vcLocale = computed(() => 'ko-KR')
 
 // Dark mode detection — project uses .dark class on <html>
 const isDark = ref(false)

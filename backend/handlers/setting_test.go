@@ -76,6 +76,10 @@ func TestUpdateNotificationSettings(t *testing.T) {
 
 	w := h.do(t, http.MethodPut, "/api/settings/notification", cfg)
 	assert.Equal(t, http.StatusOK, w.Code)
+	var statusResp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &statusResp))
+	assert.Equal(t, "수정되었습니다", statusResp["status"])
+	assert.Equal(t, "Updated", statusResp["status_en"])
 
 	// Verify the setting was saved
 	w = h.do(t, http.MethodGet, "/api/settings/notification", nil)
@@ -124,7 +128,7 @@ func TestGetNotificationSettingsDefaultLanguage(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	var resp models.NotificationConfig
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Equal(t, "zh", resp.Language)
+	assert.Equal(t, "ko", resp.Language)
 }
 
 func TestUpdateNotificationSettingsWithLanguage(t *testing.T) {
@@ -150,7 +154,8 @@ func TestTestNotificationNoSettingSaved(t *testing.T) {
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Contains(t, resp["error"], "not found")
+	assert.Equal(t, "알림 설정을 찾을 수 없습니다", resp["error"])
+	assert.Equal(t, "Notification setting not found", resp["error_en"])
 }
 
 func TestTestNotificationEmptyURL(t *testing.T) {
@@ -169,5 +174,6 @@ func TestTestNotificationEmptyURL(t *testing.T) {
 
 	var resp map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
-	assert.Contains(t, resp["error"], "empty")
+	assert.Equal(t, "알림 URL이 비어 있습니다", resp["error"])
+	assert.Equal(t, "Notification URL is empty", resp["error_en"])
 }

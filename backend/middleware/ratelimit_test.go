@@ -1,6 +1,7 @@
 package middleware_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -50,7 +51,10 @@ func TestLoginRateLimit_AtLimit(t *testing.T) {
 	// 6th request should be rate-limited
 	w := doLoginRequest(r, "10.0.0.2")
 	assert.Equal(t, http.StatusTooManyRequests, w.Code)
-	assert.Contains(t, w.Body.String(), "too many login attempts")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요", resp["error"])
+	assert.Equal(t, "Too many login attempts, please try again later", resp["error_en"])
 }
 
 func TestLoginRateLimit_MultipleOverLimit(t *testing.T) {

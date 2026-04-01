@@ -1,6 +1,7 @@
 package middleware_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -40,7 +41,10 @@ func TestRequireAuth_MissingHeader(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "missing bearer token")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "Bearer 토큰이 필요합니다", resp["error"])
+	assert.Equal(t, "Missing bearer token", resp["error_en"])
 }
 
 func TestRequireAuth_EmptyBearerToken(t *testing.T) {
@@ -53,7 +57,10 @@ func TestRequireAuth_EmptyBearerToken(t *testing.T) {
 
 	// Empty string after "Bearer " is an invalid JWT
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid token")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "토큰이 올바르지 않습니다", resp["error"])
+	assert.Equal(t, "Invalid token", resp["error_en"])
 }
 
 func TestRequireAuth_NoBearerPrefix(t *testing.T) {
@@ -65,7 +72,10 @@ func TestRequireAuth_NoBearerPrefix(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "missing bearer token")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "Bearer 토큰이 필요합니다", resp["error"])
+	assert.Equal(t, "Missing bearer token", resp["error_en"])
 }
 
 func TestRequireAuth_InvalidToken(t *testing.T) {
@@ -77,7 +87,10 @@ func TestRequireAuth_InvalidToken(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid token")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "토큰이 올바르지 않습니다", resp["error"])
+	assert.Equal(t, "Invalid token", resp["error_en"])
 }
 
 func TestRequireAuth_WrongSecret(t *testing.T) {
@@ -93,7 +106,10 @@ func TestRequireAuth_WrongSecret(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid token")
+	var resp map[string]string
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "토큰이 올바르지 않습니다", resp["error"])
+	assert.Equal(t, "Invalid token", resp["error_en"])
 }
 
 func TestRequireAuth_ValidToken(t *testing.T) {

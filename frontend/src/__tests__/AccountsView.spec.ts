@@ -81,7 +81,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/还没有账号|No accounts yet/)
+    expect(wrapper.text()).toMatch(/등록된 계정이 없습니다/)
   })
 
   it('add account button exists', async () => {
@@ -89,7 +89,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    const addBtn = wrapper.findAll('button').find(b => b.text().match(/添加账号|Add Account/))
+    const addBtn = wrapper.findAll('button').find(b => b.text().match(/계정 추가/))
     expect(addBtn).toBeDefined()
   })
 
@@ -98,7 +98,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    const addBtn = wrapper.findAll('button').find(b => b.text().match(/添加账号|Add Account/))!
+    const addBtn = wrapper.findAll('button').find(b => b.text().match(/계정 추가/))!
     await addBtn.trigger('click')
 
     // The AccountFormDialog stub should be rendered (visible prop set to true)
@@ -134,7 +134,7 @@ describe('AccountsView', () => {
     // Each card has a delete button with title containing "删除" or "Delete"
     const deleteButtons = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('删除') || title.includes('Delete'))
+      return title && (title.includes('삭제'))
     })
     expect(deleteButtons.length).toBe(2) // one per account
   })
@@ -146,7 +146,7 @@ describe('AccountsView', () => {
 
     // Trigger tiles contain trigger text
     const text = wrapper.text()
-    expect(text).toMatch(/手动触发|Trigger/)
+    expect(text).toMatch(/즉시 실행/)
   })
 
   it('trigger calls API and shows dialog', async () => {
@@ -177,7 +177,7 @@ describe('AccountsView', () => {
     await flushPromises()
 
     // Should show empty state since accounts array stays empty
-    expect(wrapper.text()).toMatch(/还没有账号|No accounts yet/)
+    expect(wrapper.text()).toMatch(/등록된 계정이 없습니다/)
   })
 
   // --- Schedule dialog open/save/resume ---
@@ -247,7 +247,7 @@ describe('AccountsView', () => {
 
     const deleteButtons = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('删除') || title.includes('Delete'))
+      return title && (title.includes('삭제'))
     })
     expect(deleteButtons.length).toBe(2)
 
@@ -266,7 +266,7 @@ describe('AccountsView', () => {
     // Click delete button for the first account
     const deleteButtons = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('删除') || title.includes('Delete'))
+      return title && (title.includes('삭제'))
     })
     await deleteButtons[0].trigger('click')
     await flushPromises()
@@ -288,7 +288,7 @@ describe('AccountsView', () => {
 
     const deleteButtons = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('删除') || title.includes('Delete'))
+      return title && (title.includes('삭제'))
     })
     await deleteButtons[0].trigger('click')
     await flushPromises()
@@ -348,7 +348,7 @@ describe('AccountsView', () => {
     await flushPromises()
 
     // Click Add button
-    const addBtn = wrapper.findAll('button').find(b => b.text().match(/添加账号|Add Account/))!
+    const addBtn = wrapper.findAll('button').find(b => b.text().match(/계정 추가/))!
     await addBtn.trigger('click')
     await flushPromises()
 
@@ -369,7 +369,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    const addBtn = wrapper.findAll('button').find(b => b.text().match(/添加账号|Add Account/))!
+    const addBtn = wrapper.findAll('button').find(b => b.text().match(/계정 추가/))!
     await addBtn.trigger('click')
     await flushPromises()
 
@@ -432,7 +432,7 @@ describe('AccountsView', () => {
     // Find notify toggle buttons (the bell icon buttons)
     const notifyBtns = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('通知') || title.includes('Notif'))
+      return title && (title.includes('알림'))
     })
     expect(notifyBtns.length).toBeGreaterThan(0)
     await notifyBtns[0].trigger('click')
@@ -451,7 +451,7 @@ describe('AccountsView', () => {
 
     const notifyBtns = wrapper.findAll('button').filter(b => {
       const title = b.attributes('title')
-      return title && (title.includes('通知') || title.includes('Notif'))
+      return title && (title.includes('알림'))
     })
     if (notifyBtns.length > 0) {
       await notifyBtns[0].trigger('click')
@@ -506,7 +506,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/已过期|Expired/)
+    expect(wrapper.text()).toMatch(/만료되었습니다/)
   })
 
   it('shows no expiry placeholder when auth_expires_at is empty', async () => {
@@ -514,7 +514,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/未设置|Not set/)
+    expect(wrapper.text()).toContain('클라이언트 시크릿 만료일이 설정되지 않았습니다')
   })
 
   // --- Schedule detail text ---
@@ -524,7 +524,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/未配置|Not configured|Not set/)
+    expect(wrapper.text()).toContain('설정되지 않음')
   })
 
   it('shows schedule paused text', async () => {
@@ -534,7 +534,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/已暂停|Paused/)
+    expect(wrapper.text()).toContain('일시 중지됨')
   })
 
   it('shows schedule disabled text', async () => {
@@ -544,7 +544,7 @@ describe('AccountsView', () => {
     const wrapper = shallowMount(AccountsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/已关闭|Disabled/)
+    expect(wrapper.text()).toContain('사용 안 함')
   })
 
   // --- Schedule tile color ---

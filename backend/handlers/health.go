@@ -7,6 +7,7 @@ import (
 	"e5-renewal/backend/config"
 	"e5-renewal/backend/database"
 	"e5-renewal/backend/middleware"
+	"e5-renewal/backend/respond"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,14 +27,23 @@ func healthHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		sqlDB, err := database.GetDB(c.Request.Context()).DB()
 		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "db": "unreachable"})
+			c.JSON(http.StatusServiceUnavailable, respond.Merge(
+				gin.H{"status": "error", "db": "unreachable"},
+				respond.Message("데이터베이스에 연결할 수 없습니다", "Database is unreachable"),
+			))
 			return
 		}
 		if err := sqlDB.Ping(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "db": "unreachable"})
+			c.JSON(http.StatusServiceUnavailable, respond.Merge(
+				gin.H{"status": "error", "db": "unreachable"},
+				respond.Message("데이터베이스에 연결할 수 없습니다", "Database is unreachable"),
+			))
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "db": "connected"})
+		c.JSON(http.StatusOK, respond.Merge(
+			gin.H{"status": "ok", "db": "connected"},
+			respond.Message("서비스가 정상입니다", "Service is healthy"),
+		))
 	}
 }
 
@@ -71,6 +81,8 @@ func healthDetailHandler() gin.HandlerFunc {
 			"uptime_seconds": int(time.Since(startTime).Seconds()),
 			"accounts_count": accountsCount,
 			"last_run_at":    lastRunAt,
+			"message":        "상세 상태를 조회했습니다",
+			"message_en":     "Health detail retrieved successfully",
 		})
 	}
 }

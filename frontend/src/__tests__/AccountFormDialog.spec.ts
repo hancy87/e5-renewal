@@ -20,7 +20,7 @@ async function flushPromises() {
 
 function getSaveButton(wrapper: VueWrapper<any>) {
   const buttons = wrapper.findAll('button')
-  const button = buttons.find(candidate => candidate.text().includes('保存') || candidate.text().includes('Save'))
+  const button = buttons.find(candidate => candidate.text().includes('저장'))
   expect(button).toBeTruthy()
   return button!
 }
@@ -44,6 +44,10 @@ function getInputByPlaceholder(wrapper: VueWrapper<any>, placeholder: string) {
   return wrapper.find(`input[placeholder*="${placeholder}"]`)
 }
 
+function getButtonByText(wrapper: VueWrapper<any>, text: string) {
+  return wrapper.findAll('button').find(button => button.text().includes(text))
+}
+
 function getTextareaByPlaceholder(wrapper: VueWrapper<any>, placeholder: string | RegExp) {
   const textareas = wrapper.findAll('textarea')
   return textareas.find(ta => {
@@ -56,15 +60,15 @@ async function fillBaseFields(wrapper: VueWrapper<any>) {
   const nameInput = getInputByPlaceholder(wrapper, 'Contoso')
   const tenantInput = wrapper.findAll('input').find(i => {
     const ph = i.attributes('placeholder') || ''
-    return ph.includes('Tenant')
+    return ph.includes('테넌트 ID')
   })
   const clientIdInput = wrapper.findAll('input').find(i => {
     const ph = i.attributes('placeholder') || ''
-    return ph.includes('Client ID')
+    return ph.includes('클라이언트 ID')
   })
   const clientSecretInput = wrapper.findAll('input').find(i => {
     const ph = i.attributes('placeholder') || ''
-    return ph.includes('Client Secret')
+    return ph.includes('클라이언트 시크릿')
   })
 
   if (nameInput.exists()) await nameInput.setValue('Contoso Dev')
@@ -92,13 +96,13 @@ describe('AccountFormDialog OAuth UX', () => {
   it('opens in edit mode for new accounts (no account prop)', async () => {
     const wrapper = await mountDialog()
     // New account mode -> shows edit form (not preview)
-    expect(wrapper.text()).toContain('添加账号')
+    expect(wrapper.text()).toContain('계정 추가')
   })
 
   it('defaults auth_type to auth_code and shows refresh token area', async () => {
     const wrapper = await mountDialog()
-    // auth_code is selected by default, so Refresh Token section is visible
-    expect(wrapper.text()).toContain('Refresh Token')
+    // auth_code is selected by default, so 리프레시 토큰 section is visible
+    expect(wrapper.text()).toContain('리프레시 토큰')
   })
 
   it('shows auto authorize button for getting refresh token', async () => {
@@ -198,17 +202,17 @@ describe('AccountFormDialog OAuth UX', () => {
     await fillBaseFields(wrapper)
 
     // Switch to manual mode
-    const manualBtn = wrapper.findAll('button').find(b => b.text() === '手动获取')
+    const manualBtn = getButtonByText(wrapper, '수동 가져오기')
     await manualBtn!.trigger('click')
 
     const redirectInput = wrapper.find('input[placeholder*="localhost"]')
     await redirectInput.setValue('http://localhost:3000/api/oauth/callback')
 
-    const generateBtn = wrapper.findAll('button').find(b => b.text() === '生成授权链接')
+    const generateBtn = getButtonByText(wrapper, '인증 링크 생성')
     await generateBtn!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/失败|failed/i)
+    expect(wrapper.text()).toContain('OAuth 인증에 실패했습니다')
   })
 
   it('shows verify button and calls /accounts/verify with correct payload', async () => {
@@ -218,14 +222,14 @@ describe('AccountFormDialog OAuth UX', () => {
     await fillBaseFields(wrapper)
 
     // Switch to direct mode to set refresh token
-    const directBtn = wrapper.findAll('button').find(b => b.text() === '直接填写')
+    const directBtn = getButtonByText(wrapper, '직접 입력')
     await directBtn!.trigger('click')
 
     const textarea = wrapper.find('[data-testid="direct-textarea"]')
     await textarea.setValue('rt-verify')
 
     const verifyBtn = wrapper.findAll('button').find(b =>
-      b.text().includes('验证') || b.text().includes('Verify')
+      b.text().includes('자격 증명 확인')
     )
     expect(verifyBtn).toBeTruthy()
 
@@ -246,7 +250,7 @@ describe('AccountFormDialog OAuth UX', () => {
     await fillBaseFields(wrapper)
 
     // Switch to direct mode to set refresh token
-    const directBtn = wrapper.findAll('button').find(b => b.text() === '直接填写')
+    const directBtn = getButtonByText(wrapper, '직접 입력')
     await directBtn!.trigger('click')
 
     const textarea = wrapper.find('[data-testid="direct-textarea"]')
@@ -279,7 +283,7 @@ describe('AccountFormDialog OAuth UX', () => {
       auth_expires_at: '',
     })
     // Preview mode shows account details title
-    expect(wrapper.text()).toContain('账号详情')
+    expect(wrapper.text()).toContain('계정 상세 정보')
   })
 
   it('validates required fields before saving', async () => {
@@ -296,7 +300,7 @@ describe('AccountFormDialog OAuth UX', () => {
     await fillBaseFields(wrapper)
 
     // Switch to client_credentials
-    const credBtn = wrapper.findAll('button').find(b => b.text().includes('凭据'))
+    const credBtn = wrapper.findAll('button').find(b => b.text().includes('클라이언트 자격 증명'))
     expect(credBtn).toBeTruthy()
     await credBtn!.trigger('click')
 
@@ -314,7 +318,7 @@ describe('AccountFormDialog OAuth UX', () => {
     const wrapper = await mountDialog()
 
     // Find close button (X button or cancel)
-    const cancelBtn = wrapper.findAll('button').find(b => b.text() === '取消')
+    const cancelBtn = wrapper.findAll('button').find(b => b.text() === '취소')
     expect(cancelBtn).toBeTruthy()
     await cancelBtn!.trigger('click')
 
@@ -344,10 +348,10 @@ describe('AccountFormDialog OAuth UX', () => {
     })
 
     // Should be in preview mode
-    expect(wrapper.text()).toContain('账号详情')
+    expect(wrapper.text()).toContain('계정 상세 정보')
 
     // Click Edit button
-    const editBtn = wrapper.findAll('button').find(b => b.text().includes('编辑'))
+    const editBtn = wrapper.findAll('button').find(b => b.text().includes('편집'))
     expect(editBtn).toBeTruthy()
     await editBtn!.trigger('click')
     await flushPromises()
@@ -378,12 +382,12 @@ describe('AccountFormDialog OAuth UX', () => {
     })
 
     // Click Edit button
-    const editBtn = wrapper.findAll('button').find(b => b.text().includes('编辑'))
+    const editBtn = wrapper.findAll('button').find(b => b.text().includes('편집'))
     await editBtn!.trigger('click')
     await flushPromises()
 
     // Should now be in edit mode
-    expect(wrapper.text()).toContain('编辑账号')
+    expect(wrapper.text()).toContain('계정 편집')
 
     // Submit the form - all fields already populated from account prop + GET response
     await getSaveButton(wrapper).trigger('click')
@@ -413,15 +417,15 @@ describe('AccountFormDialog OAuth UX', () => {
     })
 
     // Should be in preview mode
-    expect(wrapper.text()).toContain('账号详情')
+    expect(wrapper.text()).toContain('계정 상세 정보')
 
     // Click Edit button
-    const editBtn = wrapper.findAll('button').find(b => b.text().includes('编辑'))
+    const editBtn = wrapper.findAll('button').find(b => b.text().includes('편집'))
     await editBtn!.trigger('click')
     await flushPromises()
 
     // Should still be in preview mode (not edit)
-    expect(wrapper.text()).toContain('账号详情')
+    expect(wrapper.text()).toContain('계정 상세 정보')
     // Should show error
     expect(wrapper.text()).toContain('account not found')
   })
@@ -441,12 +445,12 @@ describe('AccountFormDialog OAuth UX', () => {
       auth_expires_at: '',
     })
 
-    const editBtn = wrapper.findAll('button').find(b => b.text().includes('编辑'))
+    const editBtn = wrapper.findAll('button').find(b => b.text().includes('편집'))
     await editBtn!.trigger('click')
     await flushPromises()
 
     // Should show fallback error message
-    expect(wrapper.text()).toContain('加载密钥失败')
+    expect(wrapper.text()).toContain('비밀 정보를 불러오지 못했습니다')
   })
 })
 
@@ -461,16 +465,16 @@ describe('AccountFormDialog RefreshTokenModePanel integration', () => {
     const wrapper = await mountDialog()
     // Default auth_type is auth_code, so RefreshTokenModePanel should render
     // Auto mode is the default, so the auto authorize button should be visible
-    expect(wrapper.text()).toContain('Refresh Token')
+    expect(wrapper.text()).toContain('리프레시 토큰')
     // Check for mode selector buttons - auto should be present
-    const autoBtn = wrapper.findAll('button').find(b => b.text() === '自动获取')
+    const autoBtn = getButtonByText(wrapper, '자동 가져오기')
     expect(autoBtn).toBeTruthy()
   })
 
   it('direct mode shows textarea', async () => {
     const wrapper = await mountDialog()
     // Click the direct mode button
-    const directBtn = wrapper.findAll('button').find(b => b.text() === '直接填写')
+    const directBtn = getButtonByText(wrapper, '직접 입력')
     expect(directBtn).toBeTruthy()
     await directBtn!.trigger('click')
 
@@ -484,7 +488,7 @@ describe('AccountFormDialog RefreshTokenModePanel integration', () => {
     // Auto mode is the default
     const authorizeBtn = wrapper.find('[data-testid="auto-authorize-btn"]')
     expect(authorizeBtn.exists()).toBe(true)
-    expect(authorizeBtn.text()).toContain('授权获取')
+    expect(authorizeBtn.text()).toContain('인증 요청')
   })
 
   it('manual mode shows exchange button after generating auth link', async () => {
@@ -494,7 +498,7 @@ describe('AccountFormDialog RefreshTokenModePanel integration', () => {
     await fillBaseFields(wrapper)
 
     // Click the manual mode button
-    const manualBtn = wrapper.findAll('button').find(b => b.text() === '手动获取')
+    const manualBtn = getButtonByText(wrapper, '수동 가져오기')
     expect(manualBtn).toBeTruthy()
     await manualBtn!.trigger('click')
 
@@ -504,7 +508,7 @@ describe('AccountFormDialog RefreshTokenModePanel integration', () => {
     await redirectInput.setValue('http://localhost:3000/api/oauth/callback')
 
     // Click generate auth link
-    const generateBtn = wrapper.findAll('button').find(b => b.text() === '生成授权链接')
+    const generateBtn = getButtonByText(wrapper, '인증 링크 생성')
     expect(generateBtn).toBeTruthy()
     await generateBtn!.trigger('click')
     await flushPromises()
@@ -512,6 +516,6 @@ describe('AccountFormDialog RefreshTokenModePanel integration', () => {
     // Exchange button should now be visible
     const exchangeBtn = wrapper.find('[data-testid="manual-exchange-btn"]')
     expect(exchangeBtn.exists()).toBe(true)
-    expect(exchangeBtn.text()).toContain('交换令牌')
+    expect(exchangeBtn.text()).toContain('토큰 교환')
   })
 })

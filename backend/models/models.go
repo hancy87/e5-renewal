@@ -90,7 +90,7 @@ type Setting struct {
 // NotificationConfig is the deserialized form of the notification setting.
 type NotificationConfig struct {
 	URL              string `json:"url"`
-	Language         string `json:"language"` // "zh" or "en", defaults to "zh"
+	Language         string `json:"language"` // "ko" or "en", defaults to "ko"
 	OnAuthExpiry     bool   `json:"on_auth_expiry"`
 	ExpiryDaysBefore int    `json:"expiry_days_before"`
 	OnTaskAllFailed  bool   `json:"on_task_all_failed"`

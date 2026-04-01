@@ -205,7 +205,8 @@ func TestOAuthAuthorizeRejectsMalformedRedirectURI(t *testing.T) {
 			})
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 			payload := decodeJSONBody(t, w.Body.Bytes())
-			assert.Equal(t, "invalid redirect_uri", payload["error"])
+			assert.Equal(t, "redirect_uri가 올바르지 않습니다", payload["error"])
+			assert.Equal(t, "Invalid redirect_uri", payload["error_en"])
 		})
 	}
 }
@@ -359,7 +360,8 @@ func TestOAuthExchangeRejectsInvalidCallbackURL(t *testing.T) {
 			})
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 			payload := decodeJSONBody(t, w.Body.Bytes())
-			assert.Equal(t, tc.wantError, payload["error"])
+			assert.Equal(t, "콜백 URL이 올바르지 않습니다", payload["error"])
+			assert.Equal(t, "Invalid callback URL", payload["error_en"])
 		})
 	}
 }
@@ -385,7 +387,8 @@ func TestOAuthExchangeRejectsMissingCodeOrState(t *testing.T) {
 			})
 			assert.Equal(t, http.StatusBadRequest, w.Code)
 			payload := decodeJSONBody(t, w.Body.Bytes())
-			assert.Equal(t, "missing code or state in callback URL", payload["error"])
+			assert.Equal(t, "콜백 URL에 code 또는 state가 없습니다", payload["error"])
+			assert.Equal(t, "Missing code or state in callback URL", payload["error_en"])
 		})
 	}
 }
@@ -401,7 +404,8 @@ func TestOAuthExchangeRejectsInvalidState(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	payload := decodeJSONBody(t, w.Body.Bytes())
-	assert.Equal(t, "state invalid or expired, please re-authorize", payload["error"])
+	assert.Equal(t, "state가 올바르지 않거나 만료되었습니다. 다시 인증해주세요", payload["error"])
+	assert.Equal(t, "State is invalid or expired, please re-authorize", payload["error_en"])
 }
 
 // TestOAuthExchangeRejectsConsumedState verifies that a state cannot be used twice
@@ -430,7 +434,8 @@ func TestOAuthExchangeRejectsConsumedState(t *testing.T) {
 	})
 	assert.Equal(t, http.StatusBadRequest, w2.Code)
 	payload := decodeJSONBody(t, w2.Body.Bytes())
-	assert.Equal(t, "state invalid or expired, please re-authorize", payload["error"])
+	assert.Equal(t, "state가 올바르지 않거나 만료되었습니다. 다시 인증해주세요", payload["error"])
+	assert.Equal(t, "State is invalid or expired, please re-authorize", payload["error_en"])
 }
 
 // TestOAuthExchangeReturnsTokensOnSuccess verifies that the exchange endpoint
@@ -455,6 +460,8 @@ func TestOAuthExchangeReturnsTokensOnSuccess(t *testing.T) {
 	payload := decodeJSONBody(t, w.Body.Bytes())
 	assert.Equal(t, "fake-refresh-token", payload["refresh_token"])
 	assert.Equal(t, "fake-access-token", payload["access_token"])
+	assert.Equal(t, "토큰 교환에 성공했습니다", payload["message"])
+	assert.Equal(t, "Token exchange successful", payload["message_en"])
 }
 
 // TestOAuthExchangeRequiresAuth verifies the exchange endpoint is behind RequireAuth.

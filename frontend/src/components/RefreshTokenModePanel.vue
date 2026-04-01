@@ -1,6 +1,6 @@
 <template>
   <div v-if="authType === 'auth_code'" class="space-y-3">
-    <label class="form-label">Refresh Token</label>
+    <label class="form-label">{{ t('accounts.form.refreshToken') }}</label>
 
     <!-- Mode selector — segmented controller -->
     <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-gray-100/60 dark:bg-white/5">

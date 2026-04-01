@@ -64,6 +64,11 @@ func TestLoginWrongKey(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+	var resp map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, "로그인 키가 올바르지 않습니다", resp["error"])
+	assert.Equal(t, "Invalid credentials", resp["error_en"])
 }
 
 func TestLoginRateLimit(t *testing.T) {
@@ -79,6 +84,10 @@ func TestLoginRateLimit(t *testing.T) {
 			assert.Equal(t, http.StatusUnauthorized, w.Code)
 		} else {
 			assert.Equal(t, http.StatusTooManyRequests, w.Code)
+			var resp map[string]string
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+			assert.Equal(t, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요", resp["error"])
+			assert.Equal(t, "Too many login attempts, please try again later", resp["error_en"])
 		}
 	}
 }

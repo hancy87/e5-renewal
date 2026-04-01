@@ -27,9 +27,9 @@ func TestSend_EmptyURL(t *testing.T) {
 }
 
 func TestFormatTest(t *testing.T) {
-	title, msg := notifier.FormatTest("zh")
+	title, msg := notifier.FormatTest("ko")
 	assert.Equal(t, "E5 Renewal", title)
-	assert.Equal(t, "测试通知", msg)
+	assert.Equal(t, "테스트 알림", msg)
 	assert.NotContains(t, title, "✅")
 
 	title, msg = notifier.FormatTest("en")
@@ -47,8 +47,8 @@ func TestFormatAuthExpiry(t *testing.T) {
 	_, msg = notifier.FormatAuthExpiry("en", "MyAccount", -3)
 	assert.Contains(t, msg, "3")
 
-	title, msg = notifier.FormatAuthExpiry("zh", "MyAccount", 5)
-	assert.Contains(t, title, "Client Secret")
+	title, msg = notifier.FormatAuthExpiry("ko", "MyAccount", 5)
+	assert.Contains(t, title, "클라이언트 시크릿")
 	assert.Contains(t, msg, "MyAccount")
 }
 
@@ -58,7 +58,7 @@ func TestFormatTaskAllFailed(t *testing.T) {
 	assert.Contains(t, msg, "Acct1")
 	assert.Contains(t, msg, "3")
 
-	_, msg = notifier.FormatTaskAllFailed("zh", "Acct1", 3)
+	_, msg = notifier.FormatTaskAllFailed("ko", "Acct1", 3)
 	assert.Contains(t, msg, "Acct1")
 }
 
@@ -68,6 +68,6 @@ func TestFormatHealthLow(t *testing.T) {
 	assert.Contains(t, msg, "Acct2")
 	assert.Contains(t, msg, "35")
 
-	_, msg = notifier.FormatHealthLow("zh", "Acct2", 35.0, 50)
+	_, msg = notifier.FormatHealthLow("ko", "Acct2", 35.0, 50)
 	assert.Contains(t, msg, "Acct2")
 }

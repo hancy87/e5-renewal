@@ -189,6 +189,10 @@ func TestUpdateAccountSuccess(t *testing.T) {
 	}
 	w = doAccountReq(t, r, http.MethodPut, fmt.Sprintf("/api/accounts/%d", id), updateBody)
 	assert.Equal(t, http.StatusOK, w.Code)
+	var updateResp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &updateResp))
+	assert.Equal(t, "수정되었습니다", updateResp["status"])
+	assert.Equal(t, "Updated", updateResp["status_en"])
 
 	// Verify
 	w = doAccountReq(t, r, http.MethodGet, "/api/accounts", nil)
@@ -257,6 +261,10 @@ func TestDeleteAccountSuccess(t *testing.T) {
 	// Delete
 	w = doAccountReq(t, r, http.MethodDelete, fmt.Sprintf("/api/accounts/%d", id), nil)
 	assert.Equal(t, http.StatusOK, w.Code)
+	var deleteResp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &deleteResp))
+	assert.Equal(t, "삭제되었습니다", deleteResp["status"])
+	assert.Equal(t, "Deleted", deleteResp["status_en"])
 
 	// Verify gone
 	w = doAccountReq(t, r, http.MethodGet, "/api/accounts", nil)

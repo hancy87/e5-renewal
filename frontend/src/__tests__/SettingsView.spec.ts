@@ -61,7 +61,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/设置|Settings/)
+    expect(wrapper.text()).toContain('설정')
   })
 
   it('renders save button', async () => {
@@ -69,7 +69,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))
     expect(saveBtn).toBeDefined()
   })
 
@@ -78,7 +78,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))
     expect(testBtn).toBeDefined()
   })
 
@@ -93,7 +93,7 @@ describe('SettingsView', () => {
     const urlInput = wrapper.findAll('input[type="text"]')[0]
     await urlInput.setValue('telegram://bot@telegram?chats=@test')
 
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))!
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))!
     await saveBtn.trigger('click')
     await flushPromises()
 
@@ -109,7 +109,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     expect(testBtn.attributes('disabled')).toBeDefined()
   })
 
@@ -121,7 +121,7 @@ describe('SettingsView', () => {
     await flushPromises()
 
     // saved should be true because url is non-empty
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     expect(testBtn.attributes('disabled')).toBeUndefined()
   })
 
@@ -134,7 +134,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     await testBtn.trigger('click')
     await flushPromises()
 
@@ -149,9 +149,9 @@ describe('SettingsView', () => {
     await flushPromises()
 
     const text = wrapper.text()
-    expect(text).toMatch(/Client Secret/)
-    expect(text).toMatch(/任务全部失败|All Tasks Failed/)
-    expect(text).toMatch(/健康度过低|Health Below Threshold/)
+    expect(text).toContain('클라이언트 시크릿 만료 예정')
+    expect(text).toContain('작업 전체 실패')
+    expect(text).toContain('상태 점수 임계값 미만')
   })
 
   it('fetches settings on mount', async () => {
@@ -173,12 +173,12 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     await testBtn.trigger('click')
     await flushPromises()
 
     // Toast should show success message
-    expect(wrapper.text()).toMatch(/测试通知已发送|Test sent|success/i)
+    expect(wrapper.text()).toContain('테스트 알림을 전송했습니다')
   })
 
   it('test notification shows error toast on API failure', async () => {
@@ -190,12 +190,12 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     await testBtn.trigger('click')
     await flushPromises()
 
     // Toast should show error
-    expect(wrapper.text()).toMatch(/失败|error|Error/i)
+    expect(wrapper.text()).toContain('테스트 전송에 실패했습니다')
   })
 
   it('test notification does nothing when not saved', async () => {
@@ -205,7 +205,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     // Force trigger despite disabled
     await testBtn.trigger('click')
     await flushPromises()
@@ -290,11 +290,11 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))!
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))!
     await saveBtn.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/设置已保存|Saved|success/i)
+    expect(wrapper.text()).toMatch(/설정을 저장했습니다|success/i)
   })
 
   it('save shows error toast on API failure', async () => {
@@ -305,11 +305,11 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))!
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))!
     await saveBtn.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/失败|error|Error/i)
+    expect(wrapper.text()).toContain('설정 저장에 실패했습니다')
   })
 
   // --- Fetch settings failure ---
@@ -320,7 +320,7 @@ describe('SettingsView', () => {
     await flushPromises()
 
     // Should still render with default values
-    expect(wrapper.text()).toMatch(/设置|Settings/)
+    expect(wrapper.text()).toContain('설정')
     const numberInputs = wrapper.findAll('input[type="number"]')
     // Default form should be used
     expect(wrapper.find('input[type="text"]').exists()).toBe(true)
@@ -328,37 +328,37 @@ describe('SettingsView', () => {
 
   // --- Notification language selector ---
 
-  it('renders notification language selector with default zh', async () => {
+  it('renders notification language selector with default ko', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: { url: '', language: 'zh', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
+      data: { url: '', language: 'ko', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
     })
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
     const langBtns = wrapper.findAll('button').filter(b =>
-      b.text().match(/中文|English/)
+      b.text().match(/한국어|영어/)
     )
     expect(langBtns.length).toBe(2)
-    // zh button should be active (has bg-apple-blue)
-    const zhBtn = langBtns.find(b => b.text().includes('中文'))!
-    expect(zhBtn.classes().join(' ')).toContain('bg-apple-blue')
+    // ko button should be active (has bg-apple-blue)
+    const koBtn = langBtns.find(b => b.text().includes('한국어'))!
+    expect(koBtn.classes().join(' ')).toContain('bg-apple-blue')
   })
 
   it('notification language saves with the form', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: { url: 'https://example.com', language: 'zh', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
+      data: { url: 'https://example.com', language: 'ko', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
     })
     vi.mocked(apiClient.put).mockResolvedValueOnce({ data: {} })
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
     // Click English button
-    const enBtn = wrapper.findAll('button').find(b => b.text() === 'English')!
+    const enBtn = wrapper.findAll('button').find(b => b.text() === '영어')!
     await enBtn.trigger('click')
     await flushPromises()
 
     // Save
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))!
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))!
     await saveBtn.trigger('click')
     await flushPromises()
 
@@ -371,7 +371,7 @@ describe('SettingsView', () => {
 
   it('test notification shows backend error detail when available', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: { url: 'telegram://bot@telegram?chats=@test', language: 'zh', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
+      data: { url: 'telegram://bot@telegram?chats=@test', language: 'ko', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
     })
     vi.mocked(apiClient.post).mockRejectedValueOnce({
       response: { data: { error: 'invalid Telegram token' } }
@@ -379,7 +379,7 @@ describe('SettingsView', () => {
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     await testBtn.trigger('click')
     await flushPromises()
 
@@ -388,18 +388,18 @@ describe('SettingsView', () => {
 
   it('test notification falls back to generic error when no backend detail', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce({
-      data: { url: 'telegram://bot@telegram?chats=@test', language: 'zh', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
+      data: { url: 'telegram://bot@telegram?chats=@test', language: 'ko', on_auth_expiry: false, expiry_days_before: 7, on_task_all_failed: false, on_health_low: false, health_threshold: 50 },
     })
     vi.mocked(apiClient.post).mockRejectedValueOnce(new Error('network error'))
     const wrapper = shallowMount(SettingsView, mountOptions)
     await flushPromises()
 
-    const testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    const testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     await testBtn.trigger('click')
     await flushPromises()
 
     // Should show generic translated error
-    expect(wrapper.text()).toMatch(/失败|error|Error/i)
+    expect(wrapper.text()).toContain('테스트 전송에 실패했습니다')
   })
 
   // --- After save, test button becomes enabled ---
@@ -413,19 +413,19 @@ describe('SettingsView', () => {
     await flushPromises()
 
     // Initially test button should be disabled
-    let testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    let testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     expect(testBtn.attributes('disabled')).toBeDefined()
 
     // Set URL and save
     const urlInput = wrapper.findAll('input[type="text"]')[0]
     await urlInput.setValue('telegram://bot@telegram?chats=@test')
 
-    const saveBtn = wrapper.findAll('button').find(b => b.text().match(/保存设置|Save/))!
+    const saveBtn = wrapper.findAll('button').find(b => b.text().includes('설정 저장'))!
     await saveBtn.trigger('click')
     await flushPromises()
 
     // Now test button should be enabled
-    testBtn = wrapper.findAll('button').find(b => b.text().match(/发送测试|Send Test/))!
+    testBtn = wrapper.findAll('button').find(b => b.text().includes('테스트 전송'))!
     expect(testBtn.attributes('disabled')).toBeUndefined()
   })
 })

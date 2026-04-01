@@ -2,20 +2,8 @@
   <div class="min-h-screen flex items-center justify-center bg-gradient-animated font-apple transition-colors duration-300">
     <div class="w-full max-w-md mx-4 animate-fade-in">
       <div :class="['p-10 rounded-2xl shadow-lg backdrop-blur-[40px] bg-white/72 dark:bg-[rgba(40,40,40,0.72)] border border-white/20 dark:border-white/10 relative will-change-transform', shaking ? 'animate-shake' : '']">
-        <!-- 语言切换 - 右上角小按钮 -->
-        <button
-          type="button"
-          class="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100/60 dark:bg-white/8 hover:bg-gray-200/80 dark:hover:bg-white/15 transition-all duration-200 group stagger-item stagger-1"
-          @click="toggleLocale"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-apple-gray group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5a17.92 17.92 0 01-8.716-2.247m0 0A9 9 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-          </svg>
-          <span class="text-[11px] font-medium text-apple-gray group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">{{ localeLabel }}</span>
-        </button>
-
         <!-- Logo -->
-        <div class="text-center mb-8 stagger-item stagger-2">
+        <div class="text-center mb-8 stagger-item stagger-1">
           <div class="flex justify-center mb-4">
             <AppLogo :size="56" :animated="true" />
           </div>
@@ -71,7 +59,7 @@
             <p v-if="fieldErrors.key" class="mt-1.5 text-xs text-red-500">{{ fieldErrors.key }}</p>
           </div>
 
-          <!-- 记住我 -->
+          <!-- 로그인 상태 유지 -->
           <label class="flex items-center gap-3 cursor-pointer select-none group stagger-item stagger-5">
             <button
               type="button"
@@ -88,7 +76,7 @@
             <span class="text-sm text-apple-gray group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors">{{ t('login.remember') }}</span>
           </label>
 
-          <!-- 提交按钮 -->
+          <!-- 제출 버튼 -->
           <button
             type="submit"
             :disabled="loading || !formReady"
@@ -117,7 +105,7 @@ import AppLogo from '../components/AppLogo.vue'
 
 const router = useRouter()
 const { setAuth } = useAuth()
-const { t, toggleLocale, localeLabel } = useI18n()
+const { t } = useI18n()
 
 
 const key = ref('')

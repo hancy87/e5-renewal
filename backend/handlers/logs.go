@@ -8,6 +8,7 @@ import (
 	"e5-renewal/backend/config"
 	"e5-renewal/backend/database"
 	"e5-renewal/backend/middleware"
+	"e5-renewal/backend/respond"
 
 	"github.com/gin-gonic/gin"
 )
@@ -71,7 +72,7 @@ func listTaskLogsHandler() gin.HandlerFunc {
 
 		logs, total, err := database.TaskLogs.ListWithTotal(ctx, filter)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query logs"})
+			c.JSON(http.StatusInternalServerError, respond.Error("로그를 조회하지 못했습니다", "Failed to query logs"))
 			return
 		}
 
@@ -118,13 +119,13 @@ func listEndpointLogsHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		taskLogID, err := strconv.ParseUint(c.Param("task_log_id"), 10, 64)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid task_log_id"})
+			c.JSON(http.StatusBadRequest, respond.Error("task_log_id가 올바르지 않습니다", "Invalid task_log_id"))
 			return
 		}
 
 		logs, err := database.EndpointLogs.ListByTaskLogID(c.Request.Context(), uint(taskLogID))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query endpoint logs"})
+			c.JSON(http.StatusInternalServerError, respond.Error("엔드포인트 로그를 조회하지 못했습니다", "Failed to query endpoint logs"))
 			return
 		}
 		c.JSON(http.StatusOK, logs)

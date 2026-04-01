@@ -104,7 +104,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/暂无日志|No logs yet/)
+    expect(wrapper.text()).toMatch(/로그가 없습니다/)
   })
 
   it('renders status badges correctly', async () => {
@@ -114,9 +114,9 @@ describe('LogsView', () => {
 
     const text = wrapper.text()
     // success, partial, failed statuses
-    expect(text).toMatch(/成功|Success/)
-    expect(text).toMatch(/部分成功|Partial/)
-    expect(text).toMatch(/失败|Failed/)
+    expect(text).toMatch(/성공/)
+    expect(text).toMatch(/일부 성공/)
+    expect(text).toMatch(/실패/)
   })
 
   it('renders endpoint counts', async () => {
@@ -136,8 +136,8 @@ describe('LogsView', () => {
     await flushPromises()
 
     const text = wrapper.text()
-    expect(text).toMatch(/定时|Scheduled/)
-    expect(text).toMatch(/手动|Manual/)
+    expect(text).toMatch(/예약/)
+    expect(text).toMatch(/수동/)
   })
 
   it('renders pagination with total count', async () => {
@@ -145,7 +145,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/共 3 条|3 total/)
+    expect(wrapper.text()).toMatch(/총 3건/)
   })
 
   it('filter controls are present', async () => {
@@ -159,7 +159,7 @@ describe('LogsView', () => {
 
     // Status filter buttons
     const text = wrapper.text()
-    expect(text).toMatch(/全部|All/)
+    expect(text).toMatch(/전체/)
   })
 
   it('clicking status filter re-fetches logs', async () => {
@@ -171,7 +171,7 @@ describe('LogsView', () => {
 
     // Find and click the "success" status filter button
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const successBtn = toggleBtns.find(b => b.text().match(/成功|Success/))
+    const successBtn = toggleBtns.find(b => b.text().match(/성공/))
     if (successBtn) {
       await successBtn.trigger('click')
       await flushPromises()
@@ -186,7 +186,7 @@ describe('LogsView', () => {
 
     const initialCallCount = vi.mocked(apiClient.get).mock.calls.length
 
-    const refreshBtn = wrapper.findAll('button').find(b => b.text().match(/刷新|Refresh/))
+    const refreshBtn = wrapper.findAll('button').find(b => b.text().match(/새로고침/))
     expect(refreshBtn).toBeDefined()
 
     await refreshBtn!.trigger('click')
@@ -200,7 +200,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     expect(detailBtns.length).toBe(3) // one per log row
   })
 
@@ -215,7 +215,7 @@ describe('LogsView', () => {
 
     // Click the "scheduled" trigger type button
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const scheduledBtn = toggleBtns.find(b => b.text().match(/定时|Scheduled/))
+    const scheduledBtn = toggleBtns.find(b => b.text().match(/예약/))
     if (scheduledBtn) {
       await scheduledBtn.trigger('click')
       await flushPromises()
@@ -234,7 +234,7 @@ describe('LogsView', () => {
     await flushPromises()
 
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const manualBtn = toggleBtns.find(b => b.text().match(/手动|Manual/))
+    const manualBtn = toggleBtns.find(b => b.text().match(/수동/))
     if (manualBtn) {
       await manualBtn.trigger('click')
       await flushPromises()
@@ -253,7 +253,7 @@ describe('LogsView', () => {
     await flushPromises()
 
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const failedBtn = toggleBtns.find(b => b.text().match(/失败|Failed/))
+    const failedBtn = toggleBtns.find(b => b.text().match(/실패/))
     if (failedBtn) {
       await failedBtn.trigger('click')
       await flushPromises()
@@ -272,7 +272,7 @@ describe('LogsView', () => {
     await flushPromises()
 
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const partialBtn = toggleBtns.find(b => b.text().match(/部分|Partial/))
+    const partialBtn = toggleBtns.find(b => b.text().match(/일부/))
     if (partialBtn) {
       await partialBtn.trigger('click')
       await flushPromises()
@@ -292,7 +292,7 @@ describe('LogsView', () => {
 
     // First set to failed
     const toggleBtns = wrapper.findAll('.toggle-btn')
-    const failedBtn = toggleBtns.find(b => b.text().match(/失败|Failed/))
+    const failedBtn = toggleBtns.find(b => b.text().match(/실패/))
     if (failedBtn) {
       await failedBtn.trigger('click')
       await flushPromises()
@@ -308,7 +308,7 @@ describe('LogsView', () => {
       // Find the parent container of failedBtn and get the first toggle-btn in it
       const statusAllBtns = wrapper.findAll('.toggle-btn').filter(b => {
         const text = b.text().trim()
-        return text === '全部' || text === 'All'
+        return text === '전체'
       })
       // The second "All" button is in the status group (first is in trigger type group)
       if (statusAllBtns.length >= 2) {
@@ -392,7 +392,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     if (detailBtns.length > 0) {
       await detailBtns[0].trigger('click')
       await flushPromises()
@@ -455,7 +455,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/暂无日志|No logs yet/)
+    expect(wrapper.text()).toMatch(/로그가 없습니다/)
   })
 
   // --- Drawer collapse levels ---
@@ -474,7 +474,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     if (detailBtns.length > 0) {
       await detailBtns[0].trigger('click')
       await flushPromises()
@@ -522,7 +522,7 @@ describe('LogsView', () => {
     expect(wrapper.text()).not.toContain('/me')
 
     // Click the Detail button for the first row
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     await detailBtns[0].trigger('click')
     await flushPromises()
 
@@ -543,7 +543,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     await detailBtns[0].trigger('click')
     await flushPromises()
 
@@ -568,7 +568,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     await detailBtns[0].trigger('click')
     await flushPromises()
 
@@ -597,7 +597,7 @@ describe('LogsView', () => {
     const wrapper = shallowMount(LogsView, mountOptions)
     await flushPromises()
 
-    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/详情|Details/))
+    const detailBtns = wrapper.findAll('button').filter(b => b.text().match(/상세/))
     await detailBtns[0].trigger('click')
     await flushPromises()
 
@@ -661,7 +661,7 @@ describe('LogsView', () => {
 
     // Click the account filter dropdown button
     const filterPills = wrapper.findAll('.filter-pill')
-    const accountPill = filterPills.find(p => p.text().match(/全部账号|All Accounts|全部|All/))
+    const accountPill = filterPills.find(p => p.text().includes('전체 계정'))
     if (accountPill) {
       await accountPill.trigger('click')
       await flushPromises()

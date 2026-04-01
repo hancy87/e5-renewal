@@ -86,7 +86,7 @@ describe('LoginView', () => {
     await flushPromises()
 
     // Error message should be visible
-    expect(wrapper.text()).toMatch(/密钥无效|Invalid key/i)
+    expect(wrapper.text()).toContain('액세스 키가 올바르지 않습니다')
   })
 
   it('shows backend error message when provided', async () => {
@@ -111,7 +111,7 @@ describe('LoginView', () => {
     await flushPromises()
 
     // Network error message
-    expect(wrapper.text()).toMatch(/网络|Network/i)
+    expect(wrapper.text()).toContain('네트워크 연결에 실패했습니다')
   })
 
   it('successful login stores token and redirects', async () => {
@@ -153,15 +153,9 @@ describe('LoginView', () => {
     expect(wrapper.find('.app-logo-stub').exists()).toBe(true)
   })
 
-  it('language toggle button exists and shows locale label', () => {
+  it('언어 전환 버튼을 노출하지 않는다', () => {
     const wrapper = shallowMount(LoginView, mountOptions)
-    // The language toggle button is the first button in the component (absolute top-right)
-    const buttons = wrapper.findAll('button[type="button"]')
-    // At least the language toggle and the show/hide key toggle exist
-    expect(buttons.length).toBeGreaterThanOrEqual(1)
-    // Text should contain EN or 中 (the locale label)
-    const langBtn = buttons[0]
-    expect(langBtn.text()).toMatch(/EN|中/)
+    expect(wrapper.text()).not.toMatch(/EN|中|中文|English/)
   })
 
   it('clears field error on input', async () => {
@@ -175,13 +169,13 @@ describe('LoginView', () => {
     await flushPromises()
 
     // Error shows
-    expect(wrapper.text()).toMatch(/密钥无效|Invalid key/)
+    expect(wrapper.text()).toContain('액세스 키가 올바르지 않습니다')
 
     // Type something to clear error
     await wrapper.find('input').trigger('input')
     await flushPromises()
 
     // Error should be cleared
-    expect(wrapper.text()).not.toMatch(/密钥无效|Invalid key/)
+    expect(wrapper.text()).not.toContain('액세스 키가 올바르지 않습니다')
   })
 })

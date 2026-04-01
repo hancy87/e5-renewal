@@ -120,9 +120,9 @@ describe('DashboardView', () => {
 
     const text = wrapper.text()
     // Period labels (zh default)
-    expect(text).toMatch(/近24小时|Last 24 Hours/)
-    expect(text).toMatch(/近7天|Last 7 Days/)
-    expect(text).toMatch(/近30天|Last 30 Days/)
+    expect(text).toMatch(/최근 24시간/)
+    expect(text).toMatch(/최근 7일/)
+    expect(text).toMatch(/최근 30일/)
   })
 
   it('period selector changes data by re-fetching', async () => {
@@ -137,7 +137,7 @@ describe('DashboardView', () => {
     // Click a period button (find buttons, click the first one which is "1d")
     const periodButtons = wrapper.findAll('button').filter(b => {
       const text = b.text()
-      return text.match(/近24小时|Last 24 Hours/)
+      return text.match(/최근 24시간/)
     })
     if (periodButtons.length > 0) {
       await periodButtons[0].trigger('click')
@@ -155,7 +155,7 @@ describe('DashboardView', () => {
 
     // Component catches errors silently and keeps current data
     // Verify the component still renders (title is present)
-    expect(wrapper.text()).toMatch(/仪表盘|Dashboard/)
+    expect(wrapper.text()).toMatch(/대시보드/)
   })
 
   it('refresh button triggers data re-fetch', async () => {
@@ -168,7 +168,7 @@ describe('DashboardView', () => {
     // Find the refresh button
     const refreshBtns = wrapper.findAll('button').filter(b => {
       const text = b.text()
-      return text.match(/刷新|Refresh/)
+      return text.match(/새로고침/)
     })
     expect(refreshBtns.length).toBeGreaterThan(0)
 
@@ -230,7 +230,7 @@ describe('DashboardView', () => {
     mockSuccessfulFetch()
 
     const periodBtns = wrapper.findAll('button').filter(b =>
-      b.text().match(/近30天|Last 30 Days/)
+      b.text().match(/최근 30일/)
     )
     if (periodBtns.length > 0) {
       await periodBtns[0].trigger('click')
@@ -254,7 +254,7 @@ describe('DashboardView', () => {
     mockSuccessfulFetch()
 
     const periodBtns = wrapper.findAll('button').filter(b =>
-      b.text().match(/全部|All/)
+      b.text().match(/전체 기간/)
     )
     if (periodBtns.length > 0) {
       await periodBtns[0].trigger('click')
@@ -276,7 +276,7 @@ describe('DashboardView', () => {
     await flushPromises()
 
     // Run with fail_count=0 should show success badge
-    expect(wrapper.text()).toMatch(/成功|Success/)
+    expect(wrapper.text()).toContain('성공')
   })
 
   it('renders correct endpoint counts in recent runs', async () => {
@@ -350,7 +350,7 @@ describe('DashboardView', () => {
 
     const refreshBtns = wrapper.findAll('button').filter(b => {
       const text = b.text()
-      return text.match(/刷新|Refresh/)
+      return text.match(/새로고침/)
     })
     expect(refreshBtns.length).toBeGreaterThan(0)
 
@@ -443,7 +443,7 @@ describe('DashboardView', () => {
     const wrapper = shallowMount(DashboardView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/部分成功|Partial/)
+    expect(wrapper.text()).toContain('일부 성공')
   })
 
   it('renders failed status badge for runs with all failures', async () => {
@@ -463,7 +463,7 @@ describe('DashboardView', () => {
     const wrapper = shallowMount(DashboardView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/失败|Failed/)
+    expect(wrapper.text()).toContain('실패')
   })
 
   // --- formatTime edge case ---
@@ -499,6 +499,6 @@ describe('DashboardView', () => {
     const wrapper = shallowMount(DashboardView, mountOptions)
     await flushPromises()
 
-    expect(wrapper.text()).toMatch(/暂无数据|No data/)
+    expect(wrapper.text()).toContain('표시할 데이터가 없습니다')
   })
 })
