@@ -61,6 +61,9 @@
           <p :class="['text-2xl font-semibold mt-0.5 tracking-tight transition-colors duration-200', stat.valueClass ? stat.valueClass() : 'text-gray-900 dark:text-white']">
             {{ stat.format(data) }}
           </p>
+          <p v-if="stat.detail" class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+            {{ stat.detail(data) }}
+          </p>
         </div>
       </div>
     </div>
@@ -244,6 +247,9 @@ interface DashboardData {
   success_rate: number
   total_runs: number
   error_count: number
+  expired_subscription_count: number
+  expiring_subscription_count: number
+  nearest_subscription_expiry: string
   auth_code_count: number
   credentials_count: number
   trend: TrendItem[]
@@ -261,6 +267,9 @@ const data = ref<DashboardData>({
   success_rate: 0,
   total_runs: 0,
   error_count: 0,
+  expired_subscription_count: 0,
+  expiring_subscription_count: 0,
+  nearest_subscription_expiry: '',
   auth_code_count: 0,
   credentials_count: 0,
   trend: [],
@@ -354,6 +363,26 @@ function formatTime(iso: string): string {
   const mi = String(d.getMinutes()).padStart(2, '0')
   const ss = String(d.getSeconds()).padStart(2, '0')
   return `${mm}-${dd} ${hh}:${mi}:${ss}`
+}
+
+function daysUntilDate(dateStr: string): number {
+  if (!dateStr) return 0
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
+}
+
+function nearestSubscriptionExpiryDetail(d: DashboardData): string {
+  if (!d.nearest_subscription_expiry) {
+    if (d.expired_subscription_count > 0) {
+      return t('dashboard.subscription.expiredCount').replace('{count}', String(d.expired_subscription_count))
+    }
+    return ''
+  }
+  const days = daysUntilDate(d.nearest_subscription_expiry)
+  if (days < 0) {
+    return t('dashboard.subscription.expiredCount').replace('{count}', String(Math.max(d.expired_subscription_count, 1)))
+  }
+  if (days === 0) return t('dashboard.subscription.today')
+  return t('dashboard.subscription.remaining').replace('{days}', String(days))
 }
 
 // --- Task run helpers ---
@@ -458,6 +487,20 @@ const statCards = computed(() => [
   { key: 'success_rate', label: 'dashboard.stat.successRate', icon: IconCheck, iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400', format: (d: DashboardData) => `${d.success_rate.toFixed(1)}%` },
   { key: 'total_runs', label: 'dashboard.stat.totalRuns', icon: IconRuns, iconBg: 'bg-violet-500/10 dark:bg-violet-500/15 text-violet-500 dark:text-violet-400', format: (d: DashboardData) => d.total_runs.toLocaleString() },
   { key: 'errors', label: 'dashboard.stat.errors', icon: IconAlert, iconBg: 'bg-rose-500/10 dark:bg-rose-500/15 text-rose-500 dark:text-rose-400', format: (d: DashboardData) => d.error_count.toLocaleString(), valueClass: () => data.value.error_count > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white' },
+  { key: 'expiring_subscriptions', label: 'dashboard.stat.expiringSubscriptions', icon: IconAlert, iconBg: 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400', format: (d: DashboardData) => d.expiring_subscription_count.toLocaleString() },
+  {
+    key: 'nearest_subscription_expiry',
+    label: 'dashboard.stat.nearestSubscriptionExpiry',
+    icon: IconSchedule,
+    iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-500 dark:text-indigo-400',
+    format: (d: DashboardData) => d.nearest_subscription_expiry || t('dashboard.subscription.none'),
+    detail: (d: DashboardData) => nearestSubscriptionExpiryDetail(d),
+    valueClass: () => data.value.expired_subscription_count > 0
+      ? 'text-red-500'
+      : data.value.nearest_subscription_expiry
+        ? 'text-gray-900 dark:text-white'
+        : 'text-gray-400 dark:text-gray-500',
+  },
   { key: 'active_schedules', label: 'dashboard.stat.activeSchedules', icon: IconSchedule, iconBg: 'bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-500 dark:text-cyan-400', format: (d: DashboardData) => `${d.active_schedules}/${d.total_schedules}` },
   { key: 'avg_health', label: 'dashboard.stat.systemHealth', icon: IconHeart, iconBg: 'bg-pink-500/10 dark:bg-pink-500/15 text-pink-500 dark:text-pink-400', format: (d: DashboardData) => `${d.avg_health.toFixed(1)}%`, valueClass: () => data.value.avg_health >= 90 ? 'text-emerald-600 dark:text-emerald-400' : data.value.avg_health >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500' },
 ])

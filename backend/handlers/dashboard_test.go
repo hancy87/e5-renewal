@@ -58,6 +58,9 @@ func TestDashboardSummaryEmpty(t *testing.T) {
 	assert.Equal(t, float64(0), resp["total_runs"])
 	assert.Equal(t, float64(0), resp["error_count"])
 	assert.Equal(t, float64(0), resp["success_rate"])
+	assert.Equal(t, float64(0), resp["expired_subscription_count"])
+	assert.Equal(t, float64(0), resp["expiring_subscription_count"])
+	assert.Equal(t, "", resp["nearest_subscription_expiry"])
 }
 
 func TestDashboardSummaryWithData(t *testing.T) {
@@ -65,8 +68,10 @@ func TestDashboardSummaryWithData(t *testing.T) {
 
 	ctx := context.Background()
 	// Create accounts of different types
-	acc1 := models.Account{Name: "auth-code-acc", AuthType: models.AuthTypeAuthCode, AuthInfo: `{"client_id":"c","client_secret":"s","tenant_id":"t","refresh_token":"r"}`}
-	acc2 := models.Account{Name: "cred-acc", AuthType: models.AuthTypeClientCredentials, AuthInfo: `{"client_id":"c","client_secret":"s","tenant_id":"t"}`}
+	expired := time.Now().UTC().AddDate(0, 0, -3)
+	soon := time.Now().UTC().AddDate(0, 0, 5)
+	acc1 := models.Account{Name: "auth-code-acc", AuthType: models.AuthTypeAuthCode, AuthInfo: `{"client_id":"c","client_secret":"s","tenant_id":"t","refresh_token":"r"}`, SubscriptionExpiresAt: &expired}
+	acc2 := models.Account{Name: "cred-acc", AuthType: models.AuthTypeClientCredentials, AuthInfo: `{"client_id":"c","client_secret":"s","tenant_id":"t"}`, SubscriptionExpiresAt: &soon}
 	require.NoError(t, database.Accounts.Create(ctx, &acc1))
 	require.NoError(t, database.Accounts.Create(ctx, &acc2))
 
@@ -89,6 +94,58 @@ func TestDashboardSummaryWithData(t *testing.T) {
 	assert.Equal(t, float64(1), resp["error_count"])
 	// success_rate = (total - errors) / total * 100 = 0/1 * 100 = 0
 	assert.Equal(t, float64(0), resp["success_rate"])
+	assert.Equal(t, float64(1), resp["expired_subscription_count"])
+	assert.Equal(t, float64(1), resp["expiring_subscription_count"])
+	assert.Equal(t, soon.Format("2006-01-02"), resp["nearest_subscription_expiry"])
+}
+
+func TestDashboardSummaryTreatsTodaySubscriptionAsExpiring(t *testing.T) {
+	_, do := dashboardEngine(t)
+
+	ctx := context.Background()
+	today := time.Now().UTC().Format("2006-01-02")
+	todayExpiry, err := time.Parse("2006-01-02", today)
+	require.NoError(t, err)
+
+	acc := models.Account{
+		Name:                  "today-subscription",
+		AuthType:              models.AuthTypeClientCredentials,
+		AuthInfo:              `{"client_id":"c","client_secret":"s","tenant_id":"t"}`,
+		SubscriptionExpiresAt: &todayExpiry,
+	}
+	require.NoError(t, database.Accounts.Create(ctx, &acc))
+
+	w := do(http.MethodGet, "/api/dashboard/summary")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, float64(0), resp["expired_subscription_count"])
+	assert.Equal(t, float64(1), resp["expiring_subscription_count"])
+	assert.Equal(t, today, resp["nearest_subscription_expiry"])
+}
+
+func TestDashboardSummaryTreatsTodayExpiryAsExpiring(t *testing.T) {
+	_, do := dashboardEngine(t)
+
+	ctx := context.Background()
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	acc := models.Account{
+		Name:                  "today-expiry",
+		AuthType:              models.AuthTypeClientCredentials,
+		AuthInfo:              `{"client_id":"c","client_secret":"s","tenant_id":"t"}`,
+		SubscriptionExpiresAt: &today,
+	}
+	require.NoError(t, database.Accounts.Create(ctx, &acc))
+
+	w := do(http.MethodGet, "/api/dashboard/summary")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, float64(0), resp["expired_subscription_count"])
+	assert.Equal(t, float64(1), resp["expiring_subscription_count"])
+	assert.Equal(t, today.Format("2006-01-02"), resp["nearest_subscription_expiry"])
 }
 
 func TestDashboardSummaryPeriodFilter(t *testing.T) {

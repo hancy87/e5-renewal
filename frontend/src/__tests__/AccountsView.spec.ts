@@ -28,6 +28,7 @@ const mockAccounts = [
     refresh_token: 'rt-1', notify_enabled: true,
     health: 98.2, total_runs: 420, success_runs: 412, last_run: '2026-03-09T10:00:00Z',
     auth_expires_at: '2026-06-01',
+    subscription_expires_at: '2026-05-01',
   },
   {
     id: 2, name: 'Fabrikam Prod', auth_type: 'client_credentials',
@@ -35,6 +36,7 @@ const mockAccounts = [
     refresh_token: '', notify_enabled: false,
     health: 95.1, total_runs: 380, success_runs: 361, last_run: '2026-03-09T09:00:00Z',
     auth_expires_at: '2026-12-01',
+    subscription_expires_at: '',
   },
 ]
 
@@ -515,6 +517,16 @@ describe('AccountsView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('클라이언트 시크릿 만료일이 설정되지 않았습니다')
+  })
+
+  it('shows subscription expiry details separately from auth expiry', async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockAccounts })
+    const wrapper = shallowMount(AccountsView, mountOptions)
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('구독 만료일')
+    expect(text).toContain('2026-05-01')
   })
 
   // --- Schedule detail text ---

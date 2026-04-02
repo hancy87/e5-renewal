@@ -97,6 +97,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span v-if="account.auth_expires_at" class="text-[12px] font-medium text-gray-600 dark:text-gray-400">
+                    {{ t('accounts.expiry') }}:
+                    {{ ' ' }}
                     {{ account.auth_expires_at }}
                     <span class="ml-1 opacity-60">{{ previewExpiryRemainingText }}</span>
                   </span>
@@ -108,6 +110,20 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                     </svg>
                     {{ t('accounts.notify.on') }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50/50 dark:bg-white/3">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75V4.5m7.5 2.25V4.5m-9 6h10.5m-12 8.25h13.5A2.25 2.25 0 0021 16.5v-9A2.25 2.25 0 0018.75 5.25H5.25A2.25 2.25 0 003 7.5v9A2.25 2.25 0 005.25 18.75z" />
+                  </svg>
+                  <span v-if="account.subscription_expires_at" class="text-[12px] font-medium text-gray-600 dark:text-gray-400">
+                    {{ t('accounts.subscriptionExpiry') }}:
+                    {{ ' ' }}
+                    {{ account.subscription_expires_at }}
+                    <span class="ml-1 opacity-60">{{ previewSubscriptionExpiryRemainingText }}</span>
+                  </span>
+                  <span v-else class="text-[12px] font-medium text-gray-300 dark:text-gray-600">
+                    {{ t('accounts.subscriptionExpiry.none') }}
                   </span>
                 </div>
               </div>
@@ -315,6 +331,19 @@
                   </p>
                 </div>
 
+                <div>
+                  <label class="form-label">{{ t('accounts.form.subscriptionExpiresAt') }}</label>
+                  <input
+                    v-model="form.subscription_expires_at"
+                    data-testid="subscription-expiry-input"
+                    type="date"
+                    class="form-input"
+                  />
+                  <p class="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                    {{ t('accounts.form.subscriptionExpiresAt.hint') }}
+                  </p>
+                </div>
+
                 <!-- Verify Credentials -->
                 <div>
                   <button
@@ -415,6 +444,7 @@ export interface AccountFormData {
   refresh_token: string
   notify_enabled: boolean
   auth_expires_at: string
+  subscription_expires_at: string
 }
 
 export interface AccountSchedule {
@@ -483,6 +513,7 @@ const emptyForm = (): AccountFormData => ({
   refresh_token: '',
   notify_enabled: false,
   auth_expires_at: '',
+  subscription_expires_at: '',
 })
 
 const form = reactive<AccountFormData>(emptyForm())
@@ -661,6 +692,14 @@ const previewExpiryRemainingText = computed(() => {
   return t('accounts.expiry.remaining').replace('{days}', String(days))
 })
 
+const previewSubscriptionExpiryRemainingText = computed(() => {
+  if (!props.account?.subscription_expires_at) return ''
+  const days = daysUntilExpiry(props.account.subscription_expires_at)
+  if (days < 0) return t('accounts.subscriptionExpiry.expired')
+  if (days === 0) return t('accounts.subscriptionExpiry.today')
+  return t('accounts.subscriptionExpiry.remaining').replace('{days}', String(days))
+})
+
 async function enterEditMode() {
   if (!props.account?.id) {
     dialogMode.value = 'edit'
@@ -672,6 +711,7 @@ async function enterEditMode() {
     const { data } = await apiClient.get(`/accounts/${props.account.id}`)
     form.client_secret = data.client_secret
     form.refresh_token = data.refresh_token
+    form.subscription_expires_at = data.subscription_expires_at || form.subscription_expires_at
     dialogMode.value = 'edit'
   } catch (err: any) {
     formError.value = err?.response?.data?.error || t('accounts.form.loadSecretsError')
@@ -702,6 +742,7 @@ watch(() => props.visible, (val) => {
       form.refresh_token = props.account.refresh_token
       form.notify_enabled = props.account.notify_enabled
       form.auth_expires_at = props.account.auth_expires_at || ''
+      form.subscription_expires_at = props.account.subscription_expires_at || ''
       if (form.auth_expires_at) {
         const diff = Math.ceil((new Date(form.auth_expires_at).getTime() - Date.now()) / 86400000)
         expiryDays.value = diff > 0 ? diff : 0

@@ -107,13 +107,14 @@ func TestCreateAccountWithAuthCode(t *testing.T) {
 	r, _ := setupAccountEngine(t)
 
 	body := map[string]interface{}{
-		"name":            "auth-code-acc",
-		"auth_type":       "auth_code",
-		"client_id":       "cid",
-		"client_secret":   "my-client-secret-value",
-		"tenant_id":       "tid",
-		"refresh_token":   "my-refresh-token-value",
-		"auth_expires_at": "2025-12-31",
+		"name":                    "auth-code-acc",
+		"auth_type":               "auth_code",
+		"client_id":               "cid",
+		"client_secret":           "my-client-secret-value",
+		"tenant_id":               "tid",
+		"refresh_token":           "my-refresh-token-value",
+		"auth_expires_at":         "2025-12-31",
+		"subscription_expires_at": "2026-01-31",
 	}
 
 	w := doAccountReq(t, r, http.MethodPost, "/api/accounts", body)
@@ -133,6 +134,7 @@ func TestCreateAccountWithAuthCode(t *testing.T) {
 	assert.Equal(t, "cid", acc["client_id"])
 	assert.Equal(t, "tid", acc["tenant_id"])
 	assert.Equal(t, "2025-12-31", acc["auth_expires_at"])
+	assert.Equal(t, "2026-01-31", acc["subscription_expires_at"])
 	// Secrets should be masked (maskSecret: first4 + 8 stars + last4 for len>8)
 	assert.Equal(t, "my-c********alue", acc["client_secret"])
 	assert.Equal(t, "my-r********alue", acc["refresh_token"])
@@ -479,13 +481,14 @@ func TestCreateAccountWithAuthExpiresAt(t *testing.T) {
 	r, _ := setupAccountEngine(t)
 
 	body := map[string]interface{}{
-		"name":            "expiry-test",
-		"auth_type":       "auth_code",
-		"client_id":       "cid",
-		"client_secret":   "csec",
-		"tenant_id":       "tid",
-		"refresh_token":   "rtok",
-		"auth_expires_at": "2025-06-15",
+		"name":                    "expiry-test",
+		"auth_type":               "auth_code",
+		"client_id":               "cid",
+		"client_secret":           "csec",
+		"tenant_id":               "tid",
+		"refresh_token":           "rtok",
+		"auth_expires_at":         "2025-06-15",
+		"subscription_expires_at": "2025-07-20",
 	}
 	w := doAccountReq(t, r, http.MethodPost, "/api/accounts", body)
 	require.Equal(t, http.StatusCreated, w.Code)
@@ -495,6 +498,7 @@ func TestCreateAccountWithAuthExpiresAt(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &accounts))
 	require.Len(t, accounts, 1)
 	assert.Equal(t, "2025-06-15", accounts[0]["auth_expires_at"])
+	assert.Equal(t, "2025-07-20", accounts[0]["subscription_expires_at"])
 }
 
 func TestUpdateAccountClearsAuthExpiresAt(t *testing.T) {
@@ -504,7 +508,7 @@ func TestUpdateAccountClearsAuthExpiresAt(t *testing.T) {
 	body := map[string]interface{}{
 		"name": "clear-expiry", "auth_type": "auth_code",
 		"client_id": "c", "client_secret": "s", "tenant_id": "t",
-		"refresh_token": "r", "auth_expires_at": "2025-06-15",
+		"refresh_token": "r", "auth_expires_at": "2025-06-15", "subscription_expires_at": "2025-07-15",
 	}
 	w := doAccountReq(t, r, http.MethodPost, "/api/accounts", body)
 	require.Equal(t, http.StatusCreated, w.Code)
@@ -526,6 +530,41 @@ func TestUpdateAccountClearsAuthExpiresAt(t *testing.T) {
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &accounts))
 	require.Len(t, accounts, 1)
 	assert.Equal(t, "", accounts[0]["auth_expires_at"])
+	assert.Equal(t, "", accounts[0]["subscription_expires_at"])
+}
+
+func TestUpdateAccountPersistsSubscriptionExpiresAt(t *testing.T) {
+	r, _ := setupAccountEngine(t)
+
+	body := map[string]interface{}{
+		"name":          "subscription-expiry",
+		"auth_type":     "client_credentials",
+		"client_id":     "c",
+		"client_secret": "s",
+		"tenant_id":     "t",
+	}
+	w := doAccountReq(t, r, http.MethodPost, "/api/accounts", body)
+	require.Equal(t, http.StatusCreated, w.Code)
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	id := int(resp["id"].(float64))
+
+	updateBody := map[string]interface{}{
+		"name":                    "subscription-expiry",
+		"auth_type":               "client_credentials",
+		"client_id":               "c",
+		"client_secret":           "s",
+		"tenant_id":               "t",
+		"subscription_expires_at": "2025-08-31",
+	}
+	w = doAccountReq(t, r, http.MethodPut, fmt.Sprintf("/api/accounts/%d", id), updateBody)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = doAccountReq(t, r, http.MethodGet, fmt.Sprintf("/api/accounts/%d", id), nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var account map[string]interface{}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &account))
+	assert.Equal(t, "2025-08-31", account["subscription_expires_at"])
 }
 
 func TestAccountHealthStats(t *testing.T) {

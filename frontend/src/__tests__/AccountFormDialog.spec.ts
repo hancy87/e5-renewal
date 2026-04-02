@@ -267,6 +267,7 @@ describe('AccountFormDialog OAuth UX', () => {
       tenant_id: 'tenant-123',
       refresh_token: 'rt-test',
       auth_type: 'auth_code',
+      subscription_expires_at: '',
     })
   })
 
@@ -281,9 +282,12 @@ describe('AccountFormDialog OAuth UX', () => {
       refresh_token: 'rt',
       notify_enabled: false,
       auth_expires_at: '',
+      subscription_expires_at: '2026-05-20',
     })
     // Preview mode shows account details title
     expect(wrapper.text()).toContain('계정 상세 정보')
+    expect(wrapper.text()).toContain('구독 만료일')
+    expect(wrapper.text()).toContain('2026-05-20')
   })
 
   it('validates required fields before saving', async () => {

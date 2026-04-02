@@ -26,12 +26,15 @@ func RegisterDashboardRoutes(r *gin.Engine) {
 // --- Summary ---
 
 type dashboardSummary struct {
-	TotalAccounts    int64   `json:"total_accounts"`
-	SuccessRate      float64 `json:"success_rate"`
-	TotalRuns        int64   `json:"total_runs"`
-	ErrorCount       int64   `json:"error_count"`
-	AuthCodeCount    int64   `json:"auth_code_count"`
-	CredentialsCount int64   `json:"credentials_count"`
+	TotalAccounts             int64   `json:"total_accounts"`
+	SuccessRate               float64 `json:"success_rate"`
+	TotalRuns                 int64   `json:"total_runs"`
+	ErrorCount                int64   `json:"error_count"`
+	AuthCodeCount             int64   `json:"auth_code_count"`
+	CredentialsCount          int64   `json:"credentials_count"`
+	ExpiredSubscriptionCount  int64   `json:"expired_subscription_count"`
+	ExpiringSubscriptionCount int64   `json:"expiring_subscription_count"`
+	NearestSubscriptionExpiry string  `json:"nearest_subscription_expiry"`
 }
 
 func dashboardSummaryHandler() gin.HandlerFunc {
@@ -42,6 +45,7 @@ func dashboardSummaryHandler() gin.HandlerFunc {
 		totalAccounts, _ := database.Accounts.CountAll(ctx)
 		authCodeCount, _ := database.Accounts.CountByAuthType(ctx, models.AuthTypeAuthCode)
 		credentialsCount := totalAccounts - authCodeCount
+		accounts, _ := database.Accounts.List(ctx)
 
 		totalRuns, _ := database.TaskLogs.CountInPeriod(ctx, since)
 		errorCount, _ := database.TaskLogs.CountErrorsInPeriod(ctx, since)
@@ -50,14 +54,18 @@ func dashboardSummaryHandler() gin.HandlerFunc {
 		if totalRuns > 0 {
 			successRate = float64(totalRuns-errorCount) / float64(totalRuns) * 100
 		}
+		expiredSubscriptionCount, expiringSubscriptionCount, nearestSubscriptionExpiry := summarizeSubscriptionExpiry(accounts, time.Now().UTC())
 
 		c.JSON(http.StatusOK, dashboardSummary{
-			TotalAccounts:    totalAccounts,
-			SuccessRate:      successRate,
-			TotalRuns:        totalRuns,
-			ErrorCount:       errorCount,
-			AuthCodeCount:    authCodeCount,
-			CredentialsCount: credentialsCount,
+			TotalAccounts:             totalAccounts,
+			SuccessRate:               successRate,
+			TotalRuns:                 totalRuns,
+			ErrorCount:                errorCount,
+			AuthCodeCount:             authCodeCount,
+			CredentialsCount:          credentialsCount,
+			ExpiredSubscriptionCount:  expiredSubscriptionCount,
+			ExpiringSubscriptionCount: expiringSubscriptionCount,
+			NearestSubscriptionExpiry: nearestSubscriptionExpiry,
 		})
 	}
 }
@@ -239,4 +247,32 @@ func buildRecentLogs(ctx context.Context, accounts []models.Account) []dashboard
 		})
 	}
 	return result
+}
+
+func summarizeSubscriptionExpiry(accounts []models.Account, now time.Time) (expiredCount int64, expiringCount int64, nearest string) {
+	today := time.Date(now.UTC().Year(), now.UTC().Month(), now.UTC().Day(), 0, 0, 0, 0, time.UTC)
+	threshold := today.AddDate(0, 0, 30)
+	var nearestTime *time.Time
+	for i := range accounts {
+		expiresAt := accounts[i].SubscriptionExpiresAt
+		if expiresAt == nil {
+			continue
+		}
+		expiryDate := time.Date(expiresAt.UTC().Year(), expiresAt.UTC().Month(), expiresAt.UTC().Day(), 0, 0, 0, 0, time.UTC)
+		if expiryDate.Before(today) {
+			expiredCount++
+			continue
+		}
+		if !expiryDate.After(threshold) {
+			expiringCount++
+		}
+		if nearestTime == nil || expiryDate.Before(*nearestTime) {
+			copyTime := expiryDate
+			nearestTime = &copyTime
+		}
+	}
+	if nearestTime != nil {
+		nearest = nearestTime.Format("2006-01-02")
+	}
+	return expiredCount, expiringCount, nearest
 }

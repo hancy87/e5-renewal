@@ -17,14 +17,15 @@ const (
 // Account represents an OAuth2 account for E5 subscription renewal.
 // Auth credentials are stored as a JSON blob in AuthInfo.
 type Account struct {
-	ID            uint       `gorm:"primaryKey" json:"id"`
-	Name          string     `gorm:"size:120;uniqueIndex;not null" json:"name"`
-	AuthType      string     `gorm:"size:50;not null" json:"auth_type"`
-	AuthInfo      string     `gorm:"type:text;not null" json:"-"` // JSON: {client_id, client_secret, tenant_id, refresh_token?}
-	NotifyEnabled bool       `json:"notify_enabled"`
-	AuthExpiresAt *time.Time `json:"auth_expires_at"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID                    uint       `gorm:"primaryKey" json:"id"`
+	Name                  string     `gorm:"size:120;uniqueIndex;not null" json:"name"`
+	AuthType              string     `gorm:"size:50;not null" json:"auth_type"`
+	AuthInfo              string     `gorm:"type:text;not null" json:"-"` // JSON: {client_id, client_secret, tenant_id, refresh_token?}
+	NotifyEnabled         bool       `json:"notify_enabled"`
+	AuthExpiresAt         *time.Time `json:"auth_expires_at"`
+	SubscriptionExpiresAt *time.Time `json:"subscription_expires_at"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 }
 
 // AuthInfoData is the deserialized form of Account.AuthInfo.

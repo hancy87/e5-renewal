@@ -23,14 +23,15 @@ import (
 )
 
 type accountRequest struct {
-	Name          string `json:"name"`
-	AuthType      string `json:"auth_type"`
-	ClientID      string `json:"client_id"`
-	ClientSecret  string `json:"client_secret"`
-	TenantID      string `json:"tenant_id"`
-	RefreshToken  string `json:"refresh_token"`
-	NotifyEnabled bool   `json:"notify_enabled"`
-	AuthExpiresAt string `json:"auth_expires_at"`
+	Name                  string `json:"name"`
+	AuthType              string `json:"auth_type"`
+	ClientID              string `json:"client_id"`
+	ClientSecret          string `json:"client_secret"`
+	TenantID              string `json:"tenant_id"`
+	RefreshToken          string `json:"refresh_token"`
+	NotifyEnabled         bool   `json:"notify_enabled"`
+	AuthExpiresAt         string `json:"auth_expires_at"`
+	SubscriptionExpiresAt string `json:"subscription_expires_at"`
 }
 
 type scheduleResponse struct {
@@ -43,22 +44,23 @@ type scheduleResponse struct {
 }
 
 type accountResponse struct {
-	ID            uint              `json:"id"`
-	Name          string            `json:"name"`
-	AuthType      string            `json:"auth_type"`
-	ClientID      string            `json:"client_id"`
-	ClientSecret  string            `json:"client_secret"`
-	TenantID      string            `json:"tenant_id"`
-	RefreshToken  string            `json:"refresh_token"`
-	NotifyEnabled bool              `json:"notify_enabled"`
-	AuthExpiresAt string            `json:"auth_expires_at"`
-	Health        *float64          `json:"health"`
-	TotalRuns     int               `json:"total_runs"`
-	SuccessRuns   int               `json:"success_runs"`
-	LastRun       *time.Time        `json:"last_run"`
-	Schedule      *scheduleResponse `json:"schedule"`
-	CreatedAt     time.Time         `json:"created_at"`
-	UpdatedAt     time.Time         `json:"updated_at"`
+	ID                    uint              `json:"id"`
+	Name                  string            `json:"name"`
+	AuthType              string            `json:"auth_type"`
+	ClientID              string            `json:"client_id"`
+	ClientSecret          string            `json:"client_secret"`
+	TenantID              string            `json:"tenant_id"`
+	RefreshToken          string            `json:"refresh_token"`
+	NotifyEnabled         bool              `json:"notify_enabled"`
+	AuthExpiresAt         string            `json:"auth_expires_at"`
+	SubscriptionExpiresAt string            `json:"subscription_expires_at"`
+	Health                *float64          `json:"health"`
+	TotalRuns             int               `json:"total_runs"`
+	SuccessRuns           int               `json:"success_runs"`
+	LastRun               *time.Time        `json:"last_run"`
+	Schedule              *scheduleResponse `json:"schedule"`
+	CreatedAt             time.Time         `json:"created_at"`
+	UpdatedAt             time.Time         `json:"updated_at"`
 }
 
 type scheduleRequest struct {
@@ -153,6 +155,17 @@ func createAccountHandler() gin.HandlerFunc {
 			return
 		}
 
+		authExpiresAt, err := parseOptionalDate(req.AuthExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.Error("클라이언트 시크릿 만료일 형식이 올바르지 않습니다", "Invalid auth expiry date"))
+			return
+		}
+		subscriptionExpiresAt, err := parseOptionalDate(req.SubscriptionExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.Error("구독 만료일 형식이 올바르지 않습니다", "Invalid subscription expiry date"))
+			return
+		}
+
 		authInfoJSON, _ := json.Marshal(models.AuthInfoData{
 			ClientID:     req.ClientID,
 			ClientSecret: req.ClientSecret,
@@ -161,15 +174,12 @@ func createAccountHandler() gin.HandlerFunc {
 		})
 
 		account := models.Account{
-			Name:          req.Name,
-			AuthType:      req.AuthType,
-			AuthInfo:      string(authInfoJSON),
-			NotifyEnabled: req.NotifyEnabled,
-		}
-		if req.AuthExpiresAt != "" {
-			if t, err := time.Parse("2006-01-02", req.AuthExpiresAt); err == nil {
-				account.AuthExpiresAt = &t
-			}
+			Name:                  req.Name,
+			AuthType:              req.AuthType,
+			AuthInfo:              string(authInfoJSON),
+			NotifyEnabled:         req.NotifyEnabled,
+			AuthExpiresAt:         authExpiresAt,
+			SubscriptionExpiresAt: subscriptionExpiresAt,
 		}
 
 		if err := database.Accounts.Create(ctx, &account); err != nil {
@@ -214,6 +224,16 @@ func updateAccountHandler() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, respond.Error("auth_type 값이 올바르지 않습니다", "Invalid auth_type"))
 			return
 		}
+		authExpiresAt, err := parseOptionalDate(req.AuthExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.Error("클라이언트 시크릿 만료일 형식이 올바르지 않습니다", "Invalid auth expiry date"))
+			return
+		}
+		subscriptionExpiresAt, err := parseOptionalDate(req.SubscriptionExpiresAt)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.Error("구독 만료일 형식이 올바르지 않습니다", "Invalid subscription expiry date"))
+			return
+		}
 
 		// 제출된 시크릿이 마스킹 패턴이면 기존 값을 유지합니다.
 		// If the submitted secret contains the mask pattern, preserve the existing value.
@@ -238,13 +258,8 @@ func updateAccountHandler() gin.HandlerFunc {
 		account.AuthType = req.AuthType
 		account.AuthInfo = string(authInfoJSON)
 		account.NotifyEnabled = req.NotifyEnabled
-		if req.AuthExpiresAt != "" {
-			if t, err := time.Parse("2006-01-02", req.AuthExpiresAt); err == nil {
-				account.AuthExpiresAt = &t
-			}
-		} else {
-			account.AuthExpiresAt = nil
-		}
+		account.AuthExpiresAt = authExpiresAt
+		account.SubscriptionExpiresAt = subscriptionExpiresAt
 
 		if err := database.Accounts.Save(ctx, account); err != nil {
 			c.JSON(http.StatusInternalServerError, respond.Error("계정을 수정하지 못했습니다", "Failed to update account"))
@@ -438,6 +453,9 @@ func buildAccountResponse(ctx context.Context, acc models.Account) accountRespon
 	if acc.AuthExpiresAt != nil {
 		resp.AuthExpiresAt = acc.AuthExpiresAt.Format("2006-01-02")
 	}
+	if acc.SubscriptionExpiresAt != nil {
+		resp.SubscriptionExpiresAt = acc.SubscriptionExpiresAt.Format("2006-01-02")
+	}
 
 	totalEp, successEp, _ := database.TaskLogs.EndpointCountsByAccount(ctx, acc.ID)
 	resp.TotalRuns = int(totalEp)
@@ -469,6 +487,9 @@ func buildAccountResponseUnmasked(ctx context.Context, acc models.Account) accou
 	}
 	if acc.AuthExpiresAt != nil {
 		resp.AuthExpiresAt = acc.AuthExpiresAt.Format("2006-01-02")
+	}
+	if acc.SubscriptionExpiresAt != nil {
+		resp.SubscriptionExpiresAt = acc.SubscriptionExpiresAt.Format("2006-01-02")
 	}
 
 	totalEp, successEp, _ := database.TaskLogs.EndpointCountsByAccount(ctx, acc.ID)
@@ -507,4 +528,15 @@ func computeHealth(ctx context.Context, accountID uint) *float64 {
 	}
 	h := float64(successEp) / float64(totalEp) * 100
 	return &h
+}
+
+func parseOptionalDate(value string) (*time.Time, error) {
+	if value == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
 }

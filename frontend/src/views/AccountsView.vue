@@ -159,6 +159,7 @@
               <svg class="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
+              <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 shrink-0">{{ t('accounts.expiry') }}</span>
               <span v-if="acc.auth_expires_at" class="text-[12px] font-medium text-gray-600 dark:text-gray-400">
                 {{ formatExpiryDate(acc.auth_expires_at) }}
               </span>
@@ -167,6 +168,21 @@
               </span>
               <span v-if="!acc.auth_expires_at" class="text-[12px] font-medium text-gray-300 dark:text-gray-600">
                 {{ t('accounts.expiry.none') }}
+              </span>
+            </div>
+            <div class="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-gray-50/50 dark:bg-white/3">
+              <svg class="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75V4.5m7.5 2.25V4.5m-9 6h10.5m-12 8.25h13.5A2.25 2.25 0 0021 16.5v-9A2.25 2.25 0 0018.75 5.25H5.25A2.25 2.25 0 003 7.5v9A2.25 2.25 0 005.25 18.75z" />
+              </svg>
+              <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 shrink-0">{{ t('accounts.subscriptionExpiry') }}</span>
+              <span v-if="acc.subscription_expires_at" class="text-[12px] font-medium text-gray-600 dark:text-gray-400">
+                {{ formatExpiryDate(acc.subscription_expires_at) }}
+              </span>
+              <span v-if="acc.subscription_expires_at" :class="['text-[11px] font-medium shrink-0 whitespace-nowrap', expiryUrgencyColor(acc.subscription_expires_at)]">
+                {{ subscriptionExpiryRemainingText(acc.subscription_expires_at) }}
+              </span>
+              <span v-if="!acc.subscription_expires_at" class="text-[12px] font-medium text-gray-300 dark:text-gray-600">
+                {{ t('accounts.subscriptionExpiry.none') }}
               </span>
             </div>
           </div>
@@ -433,6 +449,7 @@ async function toggleNotify(acc: Account) {
       refresh_token: acc.refresh_token,
       notify_enabled: newVal,
       auth_expires_at: acc.auth_expires_at || '',
+      subscription_expires_at: acc.subscription_expires_at || '',
     })
     acc.notify_enabled = newVal
   } catch {
@@ -543,6 +560,13 @@ function expiryRemainingText(dateStr: string): string {
   if (days < 0) return t('accounts.expiry.expired')
   if (days === 0) return t('accounts.expiry.today')
   return t('accounts.expiry.remaining').replace('{days}', String(days))
+}
+
+function subscriptionExpiryRemainingText(dateStr: string): string {
+  const days = daysUntilExpiry(dateStr)
+  if (days < 0) return t('accounts.subscriptionExpiry.expired')
+  if (days === 0) return t('accounts.subscriptionExpiry.today')
+  return t('accounts.subscriptionExpiry.remaining').replace('{days}', String(days))
 }
 
 function expiryUrgencyColor(dateStr: string): string {

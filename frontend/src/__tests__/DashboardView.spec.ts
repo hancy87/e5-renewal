@@ -44,6 +44,9 @@ const summaryData = {
   success_rate: 96.3,
   total_runs: 1200,
   error_count: 12,
+  expired_subscription_count: 1,
+  expiring_subscription_count: 2,
+  nearest_subscription_expiry: '2026-05-01',
 }
 
 const trendData = [
@@ -111,6 +114,8 @@ describe('DashboardView', () => {
     expect(text).toContain('96.3%')   // success_rate
     expect(text).toContain('1,200')   // total_runs formatted
     expect(text).toContain('12')      // error_count
+    expect(text).toContain('2')       // expiring subscription count
+    expect(text).toContain('2026-05-01')
   })
 
   it('renders period selector buttons', async () => {
