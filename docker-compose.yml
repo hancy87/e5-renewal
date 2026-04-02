@@ -1,6 +1,6 @@
 services:
   e5-renewal:
-    image: ghcr.io/cnzakii/e5-renewal:latest
+    build: .
     container_name: e5-renewal
     restart: unless-stopped
     ports:
