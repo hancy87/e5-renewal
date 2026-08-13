@@ -1,5 +1,5 @@
-# E5 Renewal configuration example
-# Copy to ~/e5-renewal.yaml and edit; env vars take precedence (see .env.example)
+# E5 Renewal 설정 예제
+# ~/e5-renewal.yaml로 복사한 뒤 수정하세요. 환경 변수가 우선 적용됩니다(.env.example 참고).
 
 server:
   host: ""
@@ -14,7 +14,7 @@ database:
 security:
   jwt_secret: "change-me-to-a-random-64-char-string"
   encryption_key: "change-me-to-a-random-string"
-  # login_key: ""  # Auto-generated if empty
+  # login_key: ""  # 비워 두면 자동으로 생성됩니다.
 
 scheduler:
   min_hours: 2

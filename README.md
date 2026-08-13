@@ -3,56 +3,52 @@
 </p>
 <h1 align="center">E5 Renewal</h1>
 <p align="center">
-  一个自托管的 Microsoft 365 E5 开发者订阅自动续期工具，通过定时调用随机 Graph API 保持订阅活跃。
+  무작위 Graph API 호출을 예약해 Microsoft 365 E5 개발자 구독을 활성 상태로 유지하는 셀프 호스팅 자동 갱신 도구입니다.
 </p>
 
 <p align="center">
-  <a href="https://github.com/cnzakii/e5-renewal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cnzakii/e5-renewal" alt="License"></a>
-  <a href="https://github.com/cnzakii/e5-renewal"><img src="https://img.shields.io/github/go-mod/go-version/cnzakii/e5-renewal/main?filename=backend/go.mod" alt="Go Version"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/releases"><img src="https://img.shields.io/github/v/release/cnzakii/e5-renewal" alt="Release"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/actions"><img src="https://img.shields.io/github/actions/workflow/status/cnzakii/e5-renewal/ci.yml?branch=main" alt="Build Status"></a>
-  <a href="https://github.com/cnzakii/e5-renewal/commits"><img src="https://img.shields.io/github/last-commit/cnzakii/e5-renewal" alt="Last Commit"></a>
-</p>
-
-<p align="center">
-  <a href="README_EN.md">English</a>
+  <a href="https://github.com/cnzakii/e5-renewal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cnzakii/e5-renewal" alt="라이선스"></a>
+  <a href="https://github.com/cnzakii/e5-renewal"><img src="https://img.shields.io/github/go-mod/go-version/cnzakii/e5-renewal/main?filename=backend/go.mod" alt="Go 버전"></a>
+  <a href="https://github.com/cnzakii/e5-renewal/releases"><img src="https://img.shields.io/github/v/release/cnzakii/e5-renewal" alt="릴리스"></a>
+  <a href="https://github.com/cnzakii/e5-renewal/actions"><img src="https://img.shields.io/github/actions/workflow/status/cnzakii/e5-renewal/ci.yml?branch=main" alt="빌드 상태"></a>
+  <a href="https://github.com/cnzakii/e5-renewal/commits"><img src="https://img.shields.io/github/last-commit/cnzakii/e5-renewal" alt="최근 커밋"></a>
 </p>
 
 ---
 
-## 功能特性
+## 주요 기능
 
-- **自动调度** — 可配置的随机间隔 Graph API 调用，支持仿真时间模式
-- **多账户管理** — 支持多个 E5 账户独立调度
-- **OAuth 2.0** — 内置授权码流程，方便获取令牌
-- **健康监控** — 每账户健康评分，失败率超阈值自动暂停
-- **推送通知** — 授权过期、任务失败、健康度低时通过 [Shoutrrr](https://containrrr.dev/shoutrrr/) 发送通知
-- **仪表盘** — 可视化概览，包含趋势图表和执行日志
-- **双语界面** — 支持中文和英文
-- **极致轻量** — 前端嵌入 Go 二进制，单个 Docker 镜像（~30MB），运行内存仅 ~27MB
+- **자동 스케줄링** — 실제 사용과 비슷한 시간 분포를 적용한, 설정 가능한 무작위 간격의 Graph API 호출
+- **다중 계정 관리** — 여러 E5 계정에 독립적인 스케줄 적용
+- **OAuth 2.0** — 토큰을 간편하게 설정할 수 있는 내장 인증 코드 흐름
+- **상태 모니터링** — 계정별 상태 점수를 계산하고 실패율이 임계값을 넘으면 자동 일시 중지
+- **푸시 알림** — 인증 만료, 작업 실패, 상태 점수 저하를 [Shoutrrr](https://containrrr.dev/shoutrrr/)로 알림
+- **대시보드** — 추세 차트와 실행 로그를 포함한 시각적 개요
+- **다국어 UI** — 중국어와 영어 인터페이스 지원
+- **경량 배포** — 프런트엔드를 Go 바이너리에 내장한 단일 Docker 이미지(약 30MB), 실행 메모리 약 27MB
 
-## 界面预览
-
-<p align="center">
-  <img src="docs/images/dashboard.png" width="800" alt="仪表盘">
-</p>
-<p align="center">
-  <img src="docs/images/accounts.png" width="800" alt="账户管理">
-</p>
-
-## 架构
+## 화면 미리 보기
 
 <p align="center">
-  <img src="docs/images/architecture_zh.svg" width="800" alt="架构图">
+  <img src="docs/images/dashboard.png" width="800" alt="대시보드">
+</p>
+<p align="center">
+  <img src="docs/images/accounts.png" width="800" alt="계정 관리">
 </p>
 
-## 快速开始
+## 아키텍처
 
-### 前置步骤
+<p align="center">
+  <img src="docs/images/architecture.svg" width="800" alt="아키텍처 구성도">
+</p>
 
-需要先注册 Azure 应用，详细步骤请参考[这篇教程](https://ednovas.xyz/2022/01/10/e5renewplus/#1-%E6%B3%A8%E5%86%8CAzure%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F)。
+## 빠른 시작
 
-### Docker 部署
+### 사전 준비
+
+먼저 Azure 애플리케이션을 등록해야 합니다. 자세한 절차는 [이 가이드](https://ednovas.xyz/2022/01/10/e5renewplus/#1-%E6%B3%A8%E5%86%8CAzure%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F)를 참고하세요.
+
+### Docker로 배포
 
 ```bash
 docker run -d \
@@ -64,30 +60,30 @@ docker run -d \
   ghcr.io/cnzakii/e5-renewal:latest
 ```
 
-首次启动时，登录密钥会自动生成并打印在日志中：
+처음 시작하면 로그인 키가 자동으로 생성되어 로그에 출력됩니다.
 
 ```bash
 docker logs e5-renewal
-# 查找: login key generated  key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# 다음 내용을 찾으세요: login key generated  key=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
-## 配置说明
+## 설정
 
-支持环境变量或 YAML 配置文件，环境变量优先级更高。
+환경 변수 또는 YAML 설정 파일을 사용할 수 있으며, 환경 변수가 우선 적용됩니다.
 
-配置文件查找顺序：`E5_CONFIG` 环境变量 → 工作目录下的 `config.yaml` / `config.yml` / `config.json`。模板参考 [`e5-renewal.yaml.example`](e5-renewal.yaml.example)。
+설정 파일은 `E5_CONFIG` 환경 변수 → 작업 디렉터리의 `config.yaml` / `config.yml` / `config.json` 순서로 탐색합니다. 템플릿은 [`e5-renewal.yaml.example`](e5-renewal.yaml.example)을 참고하세요.
 
-| 变量 | 必填 | 默认值 | 说明 |
+| 변수 | 필수 | 기본값 | 설명 |
 |------|------|--------|------|
-| `E5_CONFIG` | 否 | 自动检测 | 配置文件路径（如 `/data/config.yaml`） |
-| `E5_JWT_SECRET` | 是 | — | JWT 签名密钥（建议使用 64 位随机十六进制字符串） |
-| `E5_ENCRYPTION_KEY` | 是 | — | AES 加密密钥，用于加密存储的敏感信息（设置后不可更改） |
-| `E5_LOGIN_KEY` | 否 | 自动生成 | 管理员登录密码 |
-| `E5_DB_PATH` | 否 | `data/e5.db` | SQLite 数据库文件路径 |
-| `E5_PATH_PREFIX` | 否 | — | URL 路径前缀（如 `/myapp`） |
-| `E5_PORT` | 否 | `8080` | 监听端口 |
-| `E5_TLS_CERT` | 否 | — | TLS 证书文件路径 |
-| `E5_TLS_KEY` | 否 | — | TLS 私钥文件路径 |
+| `E5_CONFIG` | 아니요 | 자동 감지 | 설정 파일 경로(예: `/data/config.yaml`) |
+| `E5_JWT_SECRET` | 예 | — | JWT 서명 비밀 키(무작위 64자리 16진수 문자열 권장) |
+| `E5_ENCRYPTION_KEY` | 예 | — | 저장된 민감 정보를 암호화할 AES 키(설정 후 변경 불가) |
+| `E5_LOGIN_KEY` | 아니요 | 자동 생성 | 관리자 로그인 비밀번호 |
+| `E5_DB_PATH` | 아니요 | `data/e5.db` | SQLite 데이터베이스 파일 경로 |
+| `E5_PATH_PREFIX` | 아니요 | — | URL 경로 접두사(예: `/myapp`) |
+| `E5_PORT` | 아니요 | `8080` | 수신 대기 포트 |
+| `E5_TLS_CERT` | 아니요 | — | TLS 인증서 파일 경로 |
+| `E5_TLS_KEY` | 아니요 | — | TLS 개인 키 파일 경로 |
 
 ## Docker Compose
 
@@ -104,26 +100,26 @@ services:
       - .env
 ```
 
-## 开发
+## 개발
 
-**前置要求：** Go 1.25+、Node.js 22+
+**필수 환경:** Go 1.25 이상, Node.js 22 이상
 
 ```bash
-# 后端
+# 백엔드
 cd backend
 go test -race ./...
 golangci-lint run
 
-# 前端
+# 프런트엔드
 cd frontend
 npm ci
 npm run dev
 npx vitest run
 
-# 构建 Docker 镜像
+# Docker 이미지 빌드
 docker build -t e5-renewal:latest .
 ```
 
-## 许可证
+## 라이선스
 
 [MIT](LICENSE)
