@@ -44,6 +44,17 @@ func Init(path string) error {
 	if err != nil {
 		return err
 	}
+	// Preserve existing manually entered expiry dates while adding sync metadata.
+	if err := db.Model(&models.Account{}).
+		Where("subscription_expires_at IS NOT NULL AND subscription_expiry_source = ''").
+		Update("subscription_expiry_source", models.SubscriptionSourceManual).Error; err != nil {
+		return err
+	}
+	if err := db.Model(&models.Account{}).
+		Where("subscription_sync_status = ''").
+		Update("subscription_sync_status", models.SubscriptionSyncNever).Error; err != nil {
+		return err
+	}
 
 	globalDB = db
 	return nil

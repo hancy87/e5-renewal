@@ -14,30 +14,35 @@ import (
 	"e5-renewal/backend/models"
 	"e5-renewal/backend/services/executor"
 	"e5-renewal/backend/services/notifier"
+	"e5-renewal/backend/services/subscription"
 )
 
 // Scheduler manages periodic Graph API calls for all accounts
 // and daily auth expiry checks.
 type Scheduler struct {
-	Executor *executor.Executor
-	Notifier *notifier.Service
-	Rand     *rand.Rand
-	Now      func() time.Time // injectable clock
+	Executor     *executor.Executor
+	Notifier     *notifier.Service
+	Rand         *rand.Rand
+	Now          func() time.Time // injectable clock
+	Subscription *subscription.Service
 
-	mu     sync.Mutex
-	wg     sync.WaitGroup
-	timers map[uint]*time.Timer
-	ctx    context.Context
-	cancel context.CancelFunc
+	mu      sync.Mutex
+	syncMu  sync.Mutex
+	syncing map[uint]bool
+	wg      sync.WaitGroup
+	timers  map[uint]*time.Timer
+	ctx     context.Context
+	cancel  context.CancelFunc
 }
 
 // New creates a scheduler instance.
 func New(exec *executor.Executor, rng *rand.Rand) *Scheduler {
 	return &Scheduler{
-		Executor: exec,
-		Notifier: notifier.NewService(),
-		Rand:     rng,
-		Now:      time.Now,
+		Executor:     exec,
+		Notifier:     notifier.NewService(),
+		Rand:         rng,
+		Now:          time.Now,
+		Subscription: subscription.New(exec.OAuth, exec.Graph),
 	}
 }
 
@@ -53,6 +58,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 	ctx, s.cancel = context.WithCancel(ctx)
 	s.ctx = ctx
 	s.timers = make(map[uint]*time.Timer)
+	s.syncing = make(map[uint]bool)
 
 	slog.Info("scheduler startup")
 
@@ -74,8 +80,106 @@ func (s *Scheduler) Start(ctx context.Context) {
 		defer s.wg.Done()
 		s.authExpiryLoop(ctx)
 	}()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		subscriptionLoop(ctx, s)
+	}()
 
 	slog.Info("scheduler started", "subsystem", "scheduler", "accounts_scheduled", len(schedules))
+}
+
+func subscriptionLoop(ctx context.Context, s *Scheduler) {
+	if s.Subscription == nil {
+		return
+	}
+	s.syncAllSubscriptions(ctx)
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			s.syncAllSubscriptions(ctx)
+		}
+	}
+}
+
+func (s *Scheduler) syncAllSubscriptions(ctx context.Context) {
+	accounts, err := database.Accounts.List(ctx)
+	if err != nil {
+		slog.Error("failed to load accounts for subscription sync", "error", err)
+		return
+	}
+	for _, account := range accounts {
+		if ctx.Err() != nil {
+			return
+		}
+		_, _ = s.syncSubscription(ctx, account)
+	}
+}
+
+func (s *Scheduler) beginSubscriptionSync(id uint) bool {
+	s.syncMu.Lock()
+	defer s.syncMu.Unlock()
+	if s.syncing == nil {
+		s.syncing = make(map[uint]bool)
+	}
+	if s.syncing[id] {
+		return false
+	}
+	s.syncing[id] = true
+	return true
+}
+
+func (s *Scheduler) endSubscriptionSync(id uint) {
+	s.syncMu.Lock()
+	delete(s.syncing, id)
+	s.syncMu.Unlock()
+}
+
+func (s *Scheduler) syncSubscription(ctx context.Context, account models.Account) (*models.Account, error) {
+	if !s.beginSubscriptionSync(account.ID) {
+		return nil, &subscription.SyncError{Code: "already_running", Message: "구독 만료일 동기화가 이미 진행 중입니다", HTTPStatus: 409}
+	}
+	defer s.endSubscriptionSync(account.ID)
+	syncCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	return s.Subscription.Sync(syncCtx, account)
+}
+
+// QueueSubscriptionSync starts a best-effort background sync after account changes.
+func (s *Scheduler) QueueSubscriptionSync(accountID uint) {
+	if s.Subscription == nil {
+		return
+	}
+	ctx := s.ctx
+	if ctx == nil {
+		return
+	}
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		account, err := database.Accounts.GetByID(ctx, accountID)
+		if err != nil {
+			return
+		}
+		if _, err := s.syncSubscription(ctx, *account); err != nil {
+			slog.Warn("subscription expiry sync failed", "account_id", accountID, "error", err)
+		}
+	}()
+}
+
+func (s *Scheduler) SyncSubscriptionNow(ctx context.Context, accountID uint) (*models.Account, error) {
+	if s.Subscription == nil {
+		return nil, &subscription.SyncError{Code: "sync_unavailable", Message: "구독 만료일 동기화를 사용할 수 없습니다", HTTPStatus: 503}
+	}
+	account, err := database.Accounts.GetByID(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	return s.syncSubscription(ctx, *account)
 }
 
 // Stop cancels all running timers and waits for in-flight callbacks.

@@ -31,6 +31,8 @@ func setupAccountEngine(t *testing.T) (*gin.Engine, *scheduler.Scheduler) {
 	rng := rand.New(rand.NewSource(42))
 	exec := executor.New(oauth.NewService(nil), rng)
 	sched := scheduler.New(exec, rand.New(rand.NewSource(42)))
+	// Account handler tests do not exercise external subscription synchronization.
+	sched.Subscription = nil
 	sched.Start(context.Background())
 	t.Cleanup(sched.Stop)
 	handlers.RegisterAccountRoutes(r, sched)

@@ -6,6 +6,8 @@
   A self-hosted tool that automatically renews Microsoft 365 E5 developer subscriptions by scheduling randomized Graph API calls.
 </p>
 
+Subscription expiry is synchronized daily from Microsoft Graph's `/v1.0/directory/subscriptions` endpoint. Grant `Organization.Read.All` (application permission with admin consent for client credentials, or delegated permission plus a supported directory role for authorization code accounts). The displayed date is Graph's next lifecycle transition date; the Microsoft 365 Developer Program dashboard remains the authoritative renewal status.
+
 <p align="center">
   <a href="https://github.com/cnzakii/e5-renewal/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cnzakii/e5-renewal" alt="License"></a>
   <a href="https://github.com/cnzakii/e5-renewal"><img src="https://img.shields.io/github/go-mod/go-version/cnzakii/e5-renewal/main?filename=backend/go.mod" alt="Go Version"></a>
