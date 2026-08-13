@@ -126,6 +126,34 @@
                     {{ t('accounts.subscriptionExpiry.none') }}
                   </span>
                 </div>
+                <div class="px-3 py-2.5 rounded-xl bg-gray-50/50 dark:bg-white/3 space-y-2">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span :class="subscriptionSyncBadgeClass(account.subscription_sync_status)">
+                          {{ subscriptionSyncLabel(account) }}
+                        </span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-500">
+                          {{ subscriptionSourceLabel(account.subscription_expiry_source) }}
+                        </span>
+                      </div>
+                      <p v-if="account.subscription_synced_at" class="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
+                        {{ t('accounts.subscriptionSync.lastSuccess') }} {{ formatSyncTime(account.subscription_synced_at) }}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      :disabled="syncingSubscription || account.subscription_sync_status === 'pending'"
+                      class="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-medium text-apple-blue bg-apple-blue/8 hover:bg-apple-blue/15 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      @click="syncSubscriptionExpiry"
+                    >
+                      {{ syncingSubscription ? t('accounts.subscriptionSync.syncing') : t('accounts.subscriptionSync.retry') }}
+                    </button>
+                  </div>
+                  <p v-if="account.subscription_sync_error" class="text-[10px] leading-relaxed text-red-500 dark:text-red-400 break-words">
+                    {{ account.subscription_sync_error }}
+                  </p>
+                </div>
               </div>
               <!-- Load secrets error -->
               <Transition name="field-error">
@@ -464,6 +492,12 @@ export interface Account extends AccountFormData {
   success_runs?: number
   last_run?: string
   schedule?: AccountSchedule
+  subscription_expiry_source?: 'manual' | 'graph' | ''
+  subscription_sync_status?: 'never' | 'pending' | 'success' | 'error'
+  subscription_sync_attempted_at?: string | null
+  subscription_synced_at?: string | null
+  subscription_sync_error_code?: string
+  subscription_sync_error?: string
 }
 
 const props = defineProps<{
@@ -474,6 +508,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
   (e: 'save', data: AccountFormData): void
+  (e: 'subscription-synced', account: Account): void
 }>()
 
 const { t } = useI18n()
@@ -484,6 +519,7 @@ const showRefreshToken = ref(false)
 const dialogMode = ref<'preview' | 'edit'>('preview')
 const loadingSecrets = ref(false)
 const formError = ref('')
+const syncingSubscription = ref(false)
 
 const isEdit = computed(() => !!props.account)
 
@@ -645,6 +681,40 @@ function maskSecret(value: string): string {
   return value.slice(0, 4) + '\u2022'.repeat(Math.min(value.length - 8, 16)) + value.slice(-4)
 }
 
+function subscriptionSyncBadgeClass(status?: string): string {
+  const base = 'inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold'
+  if (status === 'success') return `${base} bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`
+  if (status === 'error') return `${base} bg-red-500/10 text-red-600 dark:text-red-400`
+  if (status === 'pending') return `${base} bg-blue-500/10 text-blue-600 dark:text-blue-400`
+  return `${base} bg-gray-500/10 text-gray-500 dark:text-gray-400`
+}
+
+function subscriptionSyncLabel(account: Account): string {
+  return t(`accounts.subscriptionSync.status.${account.subscription_sync_status || 'never'}`)
+}
+
+function subscriptionSourceLabel(source?: string): string {
+  return t(`accounts.subscriptionSync.source.${source || 'none'}`)
+}
+
+function formatSyncTime(value: string): string {
+  return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+}
+
+async function syncSubscriptionExpiry() {
+  if (!props.account?.id || syncingSubscription.value) return
+  syncingSubscription.value = true
+  formError.value = ''
+  try {
+    const { data } = await apiClient.post(`/accounts/${props.account.id}/subscription-expiry/sync`)
+    emit('subscription-synced', data)
+  } catch (err: any) {
+    formError.value = err?.response?.data?.error || t('accounts.subscriptionSync.failed')
+  } finally {
+    syncingSubscription.value = false
+  }
+}
+
 // --- Verify credentials ---
 const verifying = ref(false)
 const verifyResult = ref<'valid' | 'error' | null>(null)
@@ -717,6 +787,7 @@ async function enterEditMode() {
     formError.value = err?.response?.data?.error || t('accounts.form.loadSecretsError')
   } finally {
     loadingSecrets.value = false
+    syncingSubscription.value = false
   }
 }
 

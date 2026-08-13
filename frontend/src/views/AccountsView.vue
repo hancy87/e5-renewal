@@ -184,6 +184,7 @@
               <span v-if="!acc.subscription_expires_at" class="text-[12px] font-medium text-gray-300 dark:text-gray-600">
                 {{ t('accounts.subscriptionExpiry.none') }}
               </span>
+              <span :class="['ml-auto w-2 h-2 rounded-full shrink-0', subscriptionSyncDot(acc)]" :title="subscriptionSyncTitle(acc)"></span>
             </div>
           </div>
 
@@ -259,6 +260,7 @@
       v-model:visible="showFormDialog"
       :account="editingAccount"
       @save="handleSave"
+      @subscription-synced="handleSubscriptionSynced"
     />
 
     <!-- Schedule Dialog -->
@@ -315,7 +317,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from '../i18n'
 import AccountFormDialog from '../components/AccountFormDialog.vue'
@@ -350,6 +352,7 @@ const cardRefs = ref<Record<number, HTMLElement | null>>({})
 
 const toast = reactive({ show: false, type: 'success' as 'success' | 'error', message: '' })
 let toastTimer: ReturnType<typeof setTimeout> | undefined
+let subscriptionPollTimer: ReturnType<typeof setTimeout> | undefined
 
 function showToast(type: 'success' | 'error', message: string) {
   clearTimeout(toastTimer)
@@ -387,9 +390,26 @@ async function handleSave(data: AccountFormData) {
     showFormDialog.value = false
     showToast('success', t('accounts.form.save.success'))
     await fetchAccounts()
+    pollPendingSubscriptionSyncs()
   } catch {
     showToast('error', t('accounts.form.save.error'))
   }
+}
+
+function pollPendingSubscriptionSyncs(attempt = 0) {
+  clearTimeout(subscriptionPollTimer)
+  if (attempt >= 15 || !accounts.value.some(account => account.subscription_sync_status === 'pending' || account.subscription_sync_status === 'never')) return
+  subscriptionPollTimer = setTimeout(async () => {
+    await fetchAccounts()
+    pollPendingSubscriptionSyncs(attempt + 1)
+  }, 2000)
+}
+
+function handleSubscriptionSynced(account: Account) {
+  const index = accounts.value.findIndex(item => item.id === account.id)
+  if (index >= 0) accounts.value[index] = { ...accounts.value[index], ...account }
+  editingAccount.value = accounts.value[index] || account
+  showToast('success', t('accounts.subscriptionSync.success'))
 }
 
 async function handleDelete() {
@@ -459,6 +479,7 @@ async function toggleNotify(acc: Account) {
 
 onMounted(async () => {
   await fetchAccounts()
+  pollPendingSubscriptionSyncs()
 
   const hlParam = route.query.highlight as string | undefined
   if (!hlParam) return
@@ -478,11 +499,29 @@ onMounted(async () => {
   setTimeout(() => { highlightId.value = null }, 5000)
 })
 
+onUnmounted(() => {
+  clearTimeout(toastTimer)
+  clearTimeout(subscriptionPollTimer)
+})
+
 
 function healthBarColor(health: number): string {
   if (health >= 90) return 'bg-gradient-to-r from-emerald-400 to-emerald-500'
   if (health >= 70) return 'bg-gradient-to-r from-amber-400 to-amber-500'
   return 'bg-gradient-to-r from-red-400 to-red-500'
+}
+
+function subscriptionSyncDot(acc: Account): string {
+  if (acc.subscription_sync_status === 'success') return 'bg-emerald-500'
+  if (acc.subscription_sync_status === 'error') return 'bg-red-500'
+  if (acc.subscription_sync_status === 'pending') return 'bg-blue-500 animate-pulse'
+  return 'bg-gray-300 dark:bg-gray-600'
+}
+
+function subscriptionSyncTitle(acc: Account): string {
+  const status = t(`accounts.subscriptionSync.status.${acc.subscription_sync_status || 'never'}`)
+  const source = t(`accounts.subscriptionSync.source.${acc.subscription_expiry_source || 'none'}`)
+  return `${status} · ${source}${acc.subscription_sync_error ? ` · ${acc.subscription_sync_error}` : ''}`
 }
 
 function healthTextColor(health: number): string {

@@ -63,6 +63,24 @@ func (r *AccountRepo) Save(ctx context.Context, acc *models.Account) error {
 	return err
 }
 
+// UpdateDetails updates user-editable account fields without overwriting background sync state.
+func (r *AccountRepo) UpdateDetails(ctx context.Context, acc *models.Account) error {
+	encrypted, err := encryptAuthInfo(acc.AuthInfo)
+	if err != nil {
+		return err
+	}
+	return GetDB(ctx).Model(&models.Account{}).Where("id = ?", acc.ID).Updates(map[string]any{
+		"name": acc.Name, "auth_type": acc.AuthType, "auth_info": encrypted,
+		"notify_enabled": acc.NotifyEnabled, "auth_expires_at": acc.AuthExpiresAt,
+		"subscription_expires_at":    acc.SubscriptionExpiresAt,
+		"subscription_expiry_source": acc.SubscriptionExpirySource,
+	}).Error
+}
+
+func (r *AccountRepo) UpdateSubscriptionSync(ctx context.Context, id uint, fields map[string]any) error {
+	return GetDB(ctx).Model(&models.Account{}).Where("id = ?", id).Updates(fields).Error
+}
+
 // DeleteCascade deletes an account and all its task logs and endpoint logs.
 func (r *AccountRepo) DeleteCascade(ctx context.Context, id uint) error {
 	return GetDB(ctx).Transaction(func(tx *gorm.DB) error {

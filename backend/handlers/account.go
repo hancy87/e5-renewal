@@ -17,6 +17,7 @@ import (
 	"e5-renewal/backend/services/graph"
 	"e5-renewal/backend/services/oauth"
 	"e5-renewal/backend/services/scheduler"
+	"e5-renewal/backend/services/subscription"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -44,23 +45,29 @@ type scheduleResponse struct {
 }
 
 type accountResponse struct {
-	ID                    uint              `json:"id"`
-	Name                  string            `json:"name"`
-	AuthType              string            `json:"auth_type"`
-	ClientID              string            `json:"client_id"`
-	ClientSecret          string            `json:"client_secret"`
-	TenantID              string            `json:"tenant_id"`
-	RefreshToken          string            `json:"refresh_token"`
-	NotifyEnabled         bool              `json:"notify_enabled"`
-	AuthExpiresAt         string            `json:"auth_expires_at"`
-	SubscriptionExpiresAt string            `json:"subscription_expires_at"`
-	Health                *float64          `json:"health"`
-	TotalRuns             int               `json:"total_runs"`
-	SuccessRuns           int               `json:"success_runs"`
-	LastRun               *time.Time        `json:"last_run"`
-	Schedule              *scheduleResponse `json:"schedule"`
-	CreatedAt             time.Time         `json:"created_at"`
-	UpdatedAt             time.Time         `json:"updated_at"`
+	ID                          uint              `json:"id"`
+	Name                        string            `json:"name"`
+	AuthType                    string            `json:"auth_type"`
+	ClientID                    string            `json:"client_id"`
+	ClientSecret                string            `json:"client_secret"`
+	TenantID                    string            `json:"tenant_id"`
+	RefreshToken                string            `json:"refresh_token"`
+	NotifyEnabled               bool              `json:"notify_enabled"`
+	AuthExpiresAt               string            `json:"auth_expires_at"`
+	SubscriptionExpiresAt       string            `json:"subscription_expires_at"`
+	SubscriptionExpirySource    string            `json:"subscription_expiry_source"`
+	SubscriptionSyncStatus      string            `json:"subscription_sync_status"`
+	SubscriptionSyncAttemptedAt *time.Time        `json:"subscription_sync_attempted_at"`
+	SubscriptionSyncedAt        *time.Time        `json:"subscription_synced_at"`
+	SubscriptionSyncErrorCode   string            `json:"subscription_sync_error_code"`
+	SubscriptionSyncError       string            `json:"subscription_sync_error"`
+	Health                      *float64          `json:"health"`
+	TotalRuns                   int               `json:"total_runs"`
+	SuccessRuns                 int               `json:"success_runs"`
+	LastRun                     *time.Time        `json:"last_run"`
+	Schedule                    *scheduleResponse `json:"schedule"`
+	CreatedAt                   time.Time         `json:"created_at"`
+	UpdatedAt                   time.Time         `json:"updated_at"`
 }
 
 type scheduleRequest struct {
@@ -75,11 +82,12 @@ func RegisterAccountRoutes(r *gin.Engine, sched *scheduler.Scheduler) {
 	group.Use(middleware.RequireAuth())
 	group.GET("/accounts", listAccountsHandler())
 	group.GET("/accounts/:id", getAccountHandler())
-	group.POST("/accounts", createAccountHandler())
-	group.PUT("/accounts/:id", updateAccountHandler())
+	group.POST("/accounts", createAccountHandler(sched))
+	group.PUT("/accounts/:id", updateAccountHandler(sched))
 	group.DELETE("/accounts/:id", deleteAccountHandler(sched))
 	group.POST("/accounts/verify", verifyAccountHandler())
 	group.POST("/accounts/:id/trigger", triggerAccountHandler(sched))
+	group.POST("/accounts/:id/subscription-expiry/sync", syncSubscriptionExpiryHandler(sched))
 	group.GET("/accounts/:id/schedule", getScheduleHandler())
 	group.PUT("/accounts/:id/schedule", updateScheduleHandler(sched))
 }
@@ -142,7 +150,7 @@ func listAccountsHandler() gin.HandlerFunc {
 	}
 }
 
-func createAccountHandler() gin.HandlerFunc {
+func createAccountHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		var req accountRequest
@@ -174,12 +182,16 @@ func createAccountHandler() gin.HandlerFunc {
 		})
 
 		account := models.Account{
-			Name:                  req.Name,
-			AuthType:              req.AuthType,
-			AuthInfo:              string(authInfoJSON),
-			NotifyEnabled:         req.NotifyEnabled,
-			AuthExpiresAt:         authExpiresAt,
-			SubscriptionExpiresAt: subscriptionExpiresAt,
+			Name:                   req.Name,
+			AuthType:               req.AuthType,
+			AuthInfo:               string(authInfoJSON),
+			NotifyEnabled:          req.NotifyEnabled,
+			AuthExpiresAt:          authExpiresAt,
+			SubscriptionExpiresAt:  subscriptionExpiresAt,
+			SubscriptionSyncStatus: models.SubscriptionSyncNever,
+		}
+		if subscriptionExpiresAt != nil {
+			account.SubscriptionExpirySource = models.SubscriptionSourceManual
 		}
 
 		if err := database.Accounts.Create(ctx, &account); err != nil {
@@ -192,6 +204,7 @@ func createAccountHandler() gin.HandlerFunc {
 			Enabled:        false,
 			PauseThreshold: 30,
 		})
+		sched.QueueSubscriptionSync(account.ID)
 
 		c.JSON(http.StatusCreated, respond.Merge(
 			gin.H{"id": account.ID},
@@ -200,7 +213,7 @@ func createAccountHandler() gin.HandlerFunc {
 	}
 }
 
-func updateAccountHandler() gin.HandlerFunc {
+func updateAccountHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
@@ -246,6 +259,7 @@ func updateAccountHandler() gin.HandlerFunc {
 		if req.RefreshToken == maskSecret(existingAuth.RefreshToken) {
 			req.RefreshToken = existingAuth.RefreshToken
 		}
+		credentialsChanged := req.AuthType != account.AuthType || req.ClientID != existingAuth.ClientID || req.ClientSecret != existingAuth.ClientSecret || req.TenantID != existingAuth.TenantID || req.RefreshToken != existingAuth.RefreshToken
 
 		authInfoJSON, _ := json.Marshal(models.AuthInfoData{
 			ClientID:     req.ClientID,
@@ -259,13 +273,55 @@ func updateAccountHandler() gin.HandlerFunc {
 		account.AuthInfo = string(authInfoJSON)
 		account.NotifyEnabled = req.NotifyEnabled
 		account.AuthExpiresAt = authExpiresAt
+		existingSubscriptionExpiry := account.SubscriptionExpiresAt
 		account.SubscriptionExpiresAt = subscriptionExpiresAt
+		if !sameOptionalDate(existingSubscriptionExpiry, subscriptionExpiresAt) {
+			account.SubscriptionExpirySource = ""
+			if subscriptionExpiresAt != nil {
+				account.SubscriptionExpirySource = models.SubscriptionSourceManual
+			}
+		}
 
-		if err := database.Accounts.Save(ctx, account); err != nil {
+		if err := database.Accounts.UpdateDetails(ctx, account); err != nil {
 			c.JSON(http.StatusInternalServerError, respond.Error("계정을 수정하지 못했습니다", "Failed to update account"))
 			return
 		}
+		if credentialsChanged {
+			sched.QueueSubscriptionSync(account.ID)
+		}
 		c.JSON(http.StatusOK, respond.Status("수정되었습니다", "Updated"))
+	}
+}
+
+func sameOptionalDate(a, b *time.Time) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return a.Format("2006-01-02") == b.Format("2006-01-02")
+}
+
+func syncSubscriptionExpiryHandler(sched *scheduler.Scheduler) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, respond.Error("계정 ID가 올바르지 않습니다", "Invalid account ID"))
+			return
+		}
+		account, err := sched.SyncSubscriptionNow(c.Request.Context(), uint(id))
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, respond.Error("계정을 찾을 수 없습니다", "Account not found"))
+				return
+			}
+			var syncErr *subscription.SyncError
+			if errors.As(err, &syncErr) {
+				c.JSON(syncErr.HTTPStatus, respond.Error(syncErr.Message, syncErr.Code))
+				return
+			}
+			c.JSON(http.StatusBadGateway, respond.Error("구독 만료일 동기화에 실패했습니다", "Subscription expiry sync failed"))
+			return
+		}
+		c.JSON(http.StatusOK, buildAccountResponse(c.Request.Context(), *account))
 	}
 }
 
@@ -439,16 +495,22 @@ func buildAccountResponse(ctx context.Context, acc models.Account) accountRespon
 	_ = json.Unmarshal([]byte(acc.AuthInfo), &authInfo)
 
 	resp := accountResponse{
-		ID:            acc.ID,
-		Name:          acc.Name,
-		AuthType:      acc.AuthType,
-		ClientID:      authInfo.ClientID,
-		ClientSecret:  maskSecret(authInfo.ClientSecret),
-		TenantID:      authInfo.TenantID,
-		RefreshToken:  maskSecret(authInfo.RefreshToken),
-		NotifyEnabled: acc.NotifyEnabled,
-		CreatedAt:     acc.CreatedAt,
-		UpdatedAt:     acc.UpdatedAt,
+		ID:                          acc.ID,
+		Name:                        acc.Name,
+		AuthType:                    acc.AuthType,
+		ClientID:                    authInfo.ClientID,
+		ClientSecret:                maskSecret(authInfo.ClientSecret),
+		TenantID:                    authInfo.TenantID,
+		RefreshToken:                maskSecret(authInfo.RefreshToken),
+		NotifyEnabled:               acc.NotifyEnabled,
+		SubscriptionExpirySource:    acc.SubscriptionExpirySource,
+		SubscriptionSyncStatus:      acc.SubscriptionSyncStatus,
+		SubscriptionSyncAttemptedAt: acc.SubscriptionSyncAttemptedAt,
+		SubscriptionSyncedAt:        acc.SubscriptionSyncedAt,
+		SubscriptionSyncErrorCode:   acc.SubscriptionSyncErrorCode,
+		SubscriptionSyncError:       acc.SubscriptionSyncError,
+		CreatedAt:                   acc.CreatedAt,
+		UpdatedAt:                   acc.UpdatedAt,
 	}
 	if acc.AuthExpiresAt != nil {
 		resp.AuthExpiresAt = acc.AuthExpiresAt.Format("2006-01-02")
@@ -474,16 +536,22 @@ func buildAccountResponseUnmasked(ctx context.Context, acc models.Account) accou
 	_ = json.Unmarshal([]byte(acc.AuthInfo), &authInfo)
 
 	resp := accountResponse{
-		ID:            acc.ID,
-		Name:          acc.Name,
-		AuthType:      acc.AuthType,
-		ClientID:      authInfo.ClientID,
-		ClientSecret:  authInfo.ClientSecret,
-		TenantID:      authInfo.TenantID,
-		RefreshToken:  authInfo.RefreshToken,
-		NotifyEnabled: acc.NotifyEnabled,
-		CreatedAt:     acc.CreatedAt,
-		UpdatedAt:     acc.UpdatedAt,
+		ID:                          acc.ID,
+		Name:                        acc.Name,
+		AuthType:                    acc.AuthType,
+		ClientID:                    authInfo.ClientID,
+		ClientSecret:                authInfo.ClientSecret,
+		TenantID:                    authInfo.TenantID,
+		RefreshToken:                authInfo.RefreshToken,
+		NotifyEnabled:               acc.NotifyEnabled,
+		SubscriptionExpirySource:    acc.SubscriptionExpirySource,
+		SubscriptionSyncStatus:      acc.SubscriptionSyncStatus,
+		SubscriptionSyncAttemptedAt: acc.SubscriptionSyncAttemptedAt,
+		SubscriptionSyncedAt:        acc.SubscriptionSyncedAt,
+		SubscriptionSyncErrorCode:   acc.SubscriptionSyncErrorCode,
+		SubscriptionSyncError:       acc.SubscriptionSyncError,
+		CreatedAt:                   acc.CreatedAt,
+		UpdatedAt:                   acc.UpdatedAt,
 	}
 	if acc.AuthExpiresAt != nil {
 		resp.AuthExpiresAt = acc.AuthExpiresAt.Format("2006-01-02")

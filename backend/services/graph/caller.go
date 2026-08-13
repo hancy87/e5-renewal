@@ -43,6 +43,49 @@ type Caller struct {
 	Rand       *rand.Rand
 }
 
+type CompanySubscription struct {
+	ID                    string    `json:"id"`
+	SKUId                 string    `json:"skuId"`
+	SKUPartNumber         string    `json:"skuPartNumber"`
+	Status                string    `json:"status"`
+	NextLifecycleDateTime time.Time `json:"nextLifecycleDateTime"`
+}
+
+type HTTPError struct {
+	Status int
+	Body   string
+}
+
+func (e *HTTPError) Error() string { return fmt.Sprintf("Graph HTTP %d", e.Status) }
+
+func (c *Caller) ListSubscriptions(ctx context.Context, token string) ([]CompanySubscription, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, BaseURL+"/v1.0/directory/subscriptions", nil)
+	if err != nil {
+		return nil, fmt.Errorf("build subscription request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	client := c.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("subscription request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return nil, &HTTPError{Status: resp.StatusCode, Body: string(body)}
+	}
+	var payload struct {
+		Value []CompanySubscription `json:"value"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return nil, fmt.Errorf("decode subscriptions: %w", err)
+	}
+	return payload.Value, nil
+}
+
 // DelegatedScopeURLs returns the unique full scope URLs derived from delegated endpoints.
 func DelegatedScopeURLs() []string {
 	seen := map[string]struct{}{}

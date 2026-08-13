@@ -17,16 +17,31 @@ const (
 // Account represents an OAuth2 account for E5 subscription renewal.
 // Auth credentials are stored as a JSON blob in AuthInfo.
 type Account struct {
-	ID                    uint       `gorm:"primaryKey" json:"id"`
-	Name                  string     `gorm:"size:120;uniqueIndex;not null" json:"name"`
-	AuthType              string     `gorm:"size:50;not null" json:"auth_type"`
-	AuthInfo              string     `gorm:"type:text;not null" json:"-"` // JSON: {client_id, client_secret, tenant_id, refresh_token?}
-	NotifyEnabled         bool       `json:"notify_enabled"`
-	AuthExpiresAt         *time.Time `json:"auth_expires_at"`
-	SubscriptionExpiresAt *time.Time `json:"subscription_expires_at"`
-	CreatedAt             time.Time  `json:"created_at"`
-	UpdatedAt             time.Time  `json:"updated_at"`
+	ID                          uint       `gorm:"primaryKey" json:"id"`
+	Name                        string     `gorm:"size:120;uniqueIndex;not null" json:"name"`
+	AuthType                    string     `gorm:"size:50;not null" json:"auth_type"`
+	AuthInfo                    string     `gorm:"type:text;not null" json:"-"` // JSON: {client_id, client_secret, tenant_id, refresh_token?}
+	NotifyEnabled               bool       `json:"notify_enabled"`
+	AuthExpiresAt               *time.Time `json:"auth_expires_at"`
+	SubscriptionExpiresAt       *time.Time `json:"subscription_expires_at"`
+	SubscriptionExpirySource    string     `gorm:"size:20" json:"subscription_expiry_source"`
+	SubscriptionSyncStatus      string     `gorm:"size:20" json:"subscription_sync_status"`
+	SubscriptionSyncAttemptedAt *time.Time `json:"subscription_sync_attempted_at"`
+	SubscriptionSyncedAt        *time.Time `json:"subscription_synced_at"`
+	SubscriptionSyncErrorCode   string     `gorm:"size:50" json:"subscription_sync_error_code"`
+	SubscriptionSyncError       string     `gorm:"size:500" json:"subscription_sync_error"`
+	CreatedAt                   time.Time  `json:"created_at"`
+	UpdatedAt                   time.Time  `json:"updated_at"`
 }
+
+const (
+	SubscriptionSourceManual = "manual"
+	SubscriptionSourceGraph  = "graph"
+	SubscriptionSyncNever    = "never"
+	SubscriptionSyncPending  = "pending"
+	SubscriptionSyncSuccess  = "success"
+	SubscriptionSyncError    = "error"
+)
 
 // AuthInfoData is the deserialized form of Account.AuthInfo.
 type AuthInfoData struct {

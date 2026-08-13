@@ -331,6 +331,37 @@ func TestCallEndpoints_Empty(t *testing.T) {
 	assert.Empty(t, result.Results)
 }
 
+func TestListSubscriptions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1.0/directory/subscriptions", r.URL.Path)
+		assert.Equal(t, "Bearer subscription-token", r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"value":[{"id":"sub-1","skuId":"c42b9cae-ea4f-4ab7-9717-81576235ccac","skuPartNumber":"DEVELOPERPACK_E5","status":"Enabled","nextLifecycleDateTime":"2026-11-10T00:00:00Z"}]}`))
+	}))
+	defer server.Close()
+
+	caller := &graph.Caller{HTTPClient: &http.Client{Transport: &rewriteTransport{target: server.URL}}}
+	subscriptions, err := caller.ListSubscriptions(context.Background(), "subscription-token")
+	require.NoError(t, err)
+	require.Len(t, subscriptions, 1)
+	assert.Equal(t, "DEVELOPERPACK_E5", subscriptions[0].SKUPartNumber)
+	assert.Equal(t, 10, subscriptions[0].NextLifecycleDateTime.Day())
+}
+
+func TestListSubscriptionsReturnsHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":{"code":"Authorization_RequestDenied"}}`))
+	}))
+	defer server.Close()
+
+	caller := &graph.Caller{HTTPClient: &http.Client{Transport: &rewriteTransport{target: server.URL}}}
+	_, err := caller.ListSubscriptions(context.Background(), "denied-token")
+	var httpErr *graph.HTTPError
+	require.ErrorAs(t, err, &httpErr)
+	assert.Equal(t, http.StatusForbidden, httpErr.Status)
+}
+
 // rewriteTransport redirects all requests to a test server.
 type rewriteTransport struct {
 	target string
